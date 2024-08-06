@@ -1,0 +1,39 @@
+name: 🚀 Feature Request
+description: Suggest an idea for this project
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest a new feature! 🚀
+        Please make sure this feature hasn't been suggested by someone else by looking through other open/closed issues. 😃
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Description of the Feature
+      description: Give us a brief description of the feature you want to see implemented.
+      placeholder: |
+        Tell us what you want!
+    validations:
+      required: true
+
+  - type: textarea
+    id: feature-benefits
+    attributes:
+      label: Benefits of the Feature
+      description: Explain the benefits this feature would bring.
+      placeholder: |
+        1. Benefit 1...
+        2. Benefit 2...
+        3. Benefit 3...
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-information
+    attributes:
+      label: Additional Information
+      description: |
+        Provide any additional information such as mockups, screenshots, and/or scenarios in which the feature would be useful.

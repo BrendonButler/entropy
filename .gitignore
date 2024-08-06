@@ -1,0 +1,37 @@
+# IntelliJ IDEA specific
+.idea/
+*.iml
+
+# Visual Studio Code
+.vscode/
+
+# Eclipse specific
+.classpath
+
+# NetBeans specific
+nbproject/
+
+# Maven target directory
+target/
+
+# Compiled class file
+*.class
+
+# Package files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Log files
+*.log
+
+# Vim swap
+*.swp
+
+# Platform specific
+.DS_Store
+Thumbs.db
