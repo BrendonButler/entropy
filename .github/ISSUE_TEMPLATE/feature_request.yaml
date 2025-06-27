@@ -1,12 +1,14 @@
 name: 🚀 Feature Request
 description: Suggest an idea for this project
-title: "[Feature]: "
+title: "[Feature] "
 labels: ["enhancement"]
+
 body:
   - type: markdown
     attributes:
       value: |
         Thanks for taking the time to suggest a new feature! 🚀
+        
         Please make sure this feature hasn't been suggested by someone else by looking through other open/closed issues. 😃
 
   - type: textarea

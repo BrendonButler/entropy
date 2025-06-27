@@ -1,0 +1,46 @@
+name: 🔍 Spike
+description: A time-boxed research or investigation task to explore feasibility, clarify scope, or identify solutions.
+title: "[Spike] "
+labels: ["spike"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Purpose
+        This template is for **spikes**, which are tasks focused on structured investigation or research that informs future development.
+
+  - type: input
+    id: context
+    attributes:
+      label: What are we researching or investigating?
+      description: Briefly describe the question, uncertainty, or area of investigation.
+      placeholder: "e.g., Explore options for a new testing framework"
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: |
+        What are we looking to learn, answer, or solve with this spike? (_What is the acceptance criteria_?)
+        
+        Try to keep the acceptance criteria limited to 3 main points. Sub-points can be added as needed.
+      placeholder: |
+        - Viable testing frameworks are compared and included in Spike findings in the project wiki
+          - If a framework is investigated, but deemed not viable, include reasons why
+        - A preferred option is recommended
+          - Create an Architecture Decision Record (ADR) in the docs/adr directory for future reference
+        - Identify next steps for adoption or prototyping
+    validations:
+      required: true
+
+  - type: textarea
+    id: approach
+    attributes:
+      label: Suggestions
+      description: Outline a proposed approach or plan for conducting the spike (optional).
+      placeholder: "e.g., Review popular testing frameworks, prototype with top 2 options, evaluate based on criteria X, Y, Z."
+    validations:
+      required: false
