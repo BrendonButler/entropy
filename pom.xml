@@ -32,7 +32,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
         <maven.compiler.release>21</maven.compiler.release>
+
         <lwjgl.version>3.3.6</lwjgl.version>
         <junit.version>5.13.2</junit.version>
     </properties>
@@ -45,30 +47,16 @@
             <version>${lwjgl.version}</version>
         </dependency>
 
-        <!-- LWJGL native bindings for all platforms -->
+        <!-- LWJGL native binding (resolved via property) -->
         <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl</artifactId>
-            <version>${lwjgl.version}</version>
-            <classifier>natives-windows</classifier>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl</artifactId>
-            <version>${lwjgl.version}</version>
-            <classifier>natives-linux</classifier>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl</artifactId>
-            <version>${lwjgl.version}</version>
-            <classifier>natives-macos</classifier>
-            <scope>runtime</scope>
+          <groupId>org.lwjgl</groupId>
+          <artifactId>lwjgl</artifactId>
+          <version>${lwjgl.version}</version>
+          <classifier>${native.classifier}</classifier>
+          <scope>runtime</scope>
         </dependency>
 
-        <!-- JUnit for testing -->
+        <!-- JUnit Jupiter for testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -78,8 +66,10 @@
     </dependencies>
 
     <build>
+        <finalName>${project.artifactId}-${project.version}-${platform.name}</finalName>
+
         <plugins>
-            <!-- Java compiler -->
+            <!-- Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -103,19 +93,33 @@
 
     <profiles>
         <profile>
-            <id>dev</id>
+            <id>windows</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
             <properties>
-                <env>development</env>
+                <native.classifier>natives-windows</native.classifier>
+                <platform.name>windows</platform.name>
             </properties>
+        </profile>
+        <profile>
+            <id>linux</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <native.classifier>natives-linux</native.classifier>
+                <platform.name>linux</platform.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>macos</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-        </profile>
-
-        <profile>
-            <id>prod</id>
             <properties>
-                <env>production</env>
+                <native.classifier>natives-macos</native.classifier>
+                <platform.name>macos</platform.name>
             </properties>
         </profile>
     </profiles>
