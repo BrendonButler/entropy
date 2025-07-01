@@ -38,7 +38,7 @@
         <lwjgl.version>3.3.6</lwjgl.version>
         <junit.version>5.13.2</junit.version>
 
-        <revision>${project.version}</revision>
+        <build.revision>${project.version}</build.revision>
     </properties>
 
     <dependencies>
@@ -68,7 +68,7 @@
     </dependencies>
 
     <build>
-        <finalName>${project.artifactId}-${revision}-${platform.name}</finalName>
+        <finalName>${project.artifactId}-${build.revision}-${platform.name}</finalName>
 
         <plugins>
             <!-- Compiler -->

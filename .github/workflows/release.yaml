@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::400389109701:role/GHA-entropy-DeployRole
           aws-region: us-east-1
@@ -73,7 +73,7 @@ jobs:
           IFS=',' read -ra PL <<< "${{ steps.resolve.outputs.platforms }}"
           M=()
           for OS in "${PL[@]}"; do
-            if ! aws s3 ls "s3://entropy-builds/${{ steps.resolve.outputs.revision }}/{${OS}}/" | grep -q '\.jar'; then
+            if ! aws s3 ls "s3://entropy-builds/${{ steps.resolve.outputs.revision }}/${OS}/" | grep -q '\.jar'; then
               M+=("$OS")
             fi
           done
@@ -139,6 +139,6 @@ jobs:
           - 🏷️ **Tag:** [\`$TAG\`]($URL)
           - 🔁 **Revision:** \`$REV\`
           - 💻 **Platforms:** \`$PFS\`
-          
+
           _View full release details:_ [$URL]($URL)
           EOF
