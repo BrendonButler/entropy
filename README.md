@@ -38,3 +38,26 @@ mvn clean package -Pmacos
 ```bash
 mvn clean package -Plinux
 ```
+
+## 📝 Versioning Strategy
+
+> [!NOTE]
+> This project follows [Semantic Versioning](https://semver.org/) with explicit pre-release qualifiers.
+
+### 🔖 Version Stages
+
+| Stage                     | Version Pattern    | Description                                          |
+|---------------------------|--------------------|------------------------------------------------------|
+| Pre-Alpha                 | `0.1.0-PREALPHA.N` | Early prototypes; increment `N` for each CI snapshot |
+| Alpha                     | `0.2.0-ALPHA.N`    | Playable features; minor bumps for feature waves     |
+| Beta                      | `0.2.0-BETA.N`     | Feature complete; patch bumps for fixes              |
+| Release Candidate         | `1.0.0-RC.N`       | Final validation before GA                           |
+| General Availability (GA) | `1.0.0`            | Production-ready release                             |
+| Post-GA Minor             | `1.1.0`, `1.2.0`   | New features and enhancements                        |
+| Post-GA Patch             | `1.0.1`, `1.0.2`   | Bug fixes and minor improvements                     |
+
+### ⚙️ Bumping Guidelines
+
+- Minor bumps (`0.x.0`) introduce sizable features or API changes during pre-releases.
+- Patch bumps (`0.x.1`) address bug fixes or small refinements within the same stage.
+- After an RC (`-RC.N`) is validated, drop the qualifier for GA (`1.0.0`).

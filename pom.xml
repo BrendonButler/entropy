@@ -6,7 +6,7 @@
 
     <groupId>com.brendonbutler.entropy</groupId>
     <artifactId>entropy</artifactId>
-    <version>1.0.0-PREALPHA</version>
+    <version>0.1.0-PREALPHA</version>
     <name>entropy</name>
     <description>Ivy must resolve the disorder by battling through the mysterious force that threatens the kingdoms.</description>
     <url>https://www.sparkzz.net/projects?id=entropy</url>
@@ -37,6 +37,8 @@
 
         <lwjgl.version>3.3.6</lwjgl.version>
         <junit.version>5.13.2</junit.version>
+
+        <revision>${project.version}</revision>
     </properties>
 
     <dependencies>
@@ -66,7 +68,7 @@
     </dependencies>
 
     <build>
-        <finalName>${project.artifactId}-${project.version}-${platform.name}</finalName>
+        <finalName>${project.artifactId}-${revision}-${platform.name}</finalName>
 
         <plugins>
             <!-- Compiler -->
@@ -93,16 +95,6 @@
 
     <profiles>
         <profile>
-            <id>windows</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <native.classifier>natives-windows</native.classifier>
-                <platform.name>windows</platform.name>
-            </properties>
-        </profile>
-        <profile>
             <id>linux</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
@@ -120,6 +112,16 @@
             <properties>
                 <native.classifier>natives-macos</native.classifier>
                 <platform.name>macos</platform.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>windows</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <native.classifier>natives-windows</native.classifier>
+                <platform.name>windows</platform.name>
             </properties>
         </profile>
     </profiles>
