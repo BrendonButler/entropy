@@ -141,7 +141,7 @@ jobs:
           else
             echo "BUILD_RESULT=built" >> $GITHUB_ENV
             mvn clean package -P${{ matrix.os }} -Dbuild.revision="${BUILD_VERSION}"
-            aws s3 sync "target/$ARTIFACT" "$S3_URI"
+            aws s3 cp "target/$ARTIFACT" "$S3_URI"
           
             if [ $? -eq 0 ]; then
               echo "✔️ Successfully uploaded build to S3"
