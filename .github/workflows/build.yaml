@@ -131,16 +131,25 @@ jobs:
         shell: bash
         env:
           MATRIX_OS: ${{ matrix.os }}
-          ARTIFACT: entropy-${{ env.BUILD_VERSION }}-${{ matrix.os }}.jar
-          S3_KEY: ${{ env.GIT_SHA }}/${{ matrix.os }}/${{ env.ARTIFACT }}
-          S3_URI: s3://${{ env.S3_BUCKET }}/${{ env.S3_KEY }}
         run: |
+          ARTIFACT="entropy-${BUILD_VERSION}-${MATRIX_OS}.jar"
+          S3_KEY="${GIT_SHA}/${MATRIX_OS}/${ARTIFACT}"
+          S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
+
+          echo "S3_ARTIFACT_URI=$S3_URI/$ARTIFACT" >> $GITHUB_ENV
+
+          echo "📦 Artifact: $ARTIFACT"
+          echo "📤 S3 URI: $S3_URI"
+
           if aws s3api head-object --bucket "$S3_BUCKET" --key "$S3_KEY" 2>/dev/null; then
             echo "BUILD_RESULT=skipped" >> $GITHUB_ENV
-            echo "✔️ Already exists—skipping build."
+            echo "✔️ Artifact already exists in S3. Skipping build."
           else
             echo "BUILD_RESULT=built" >> $GITHUB_ENV
-            mvn clean package -P${{ matrix.os }} -Dbuild.revision="${BUILD_VERSION}"
+            echo "🚧 Building artifact for $MATRIX_OS..."
+            mvn clean package -P${MATRIX_OS} -Dbuild.revision="$BUILD_VERSION"
+
+            echo "📤 Uploading to $S3_URI"
             aws s3 cp "target/$ARTIFACT" "$S3_URI"
           
             if [ $? -eq 0 ]; then
@@ -173,5 +182,5 @@ jobs:
             echo "- **Version:** \`${BUILD_VERSION}\`"
             echo "- **Build Status:** $([[ $BUILD_RESULT == built ]] && echo '✅ Built' || echo '⚠️ Skipped')"
             echo "- **S3 Verification Status:** $([[ $VERIFY_STATUS == success ]] && echo '✅ Verified S3 artifact(s)' || echo '❌ Failed S3 artifact verification')"
-            echo "- **URI:** \`${S3_URI}\`"
+            echo "- **URI:** \`${S3_ARTIFACT_URI}\`"
           } >> $GITHUB_STEP_SUMMARY
