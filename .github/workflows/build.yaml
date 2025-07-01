@@ -5,7 +5,31 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ '**' ]
+  workflow_call:
+    inputs:
+      revision:
+        description: 'Git SHA or ref to build'
+        required: false
+        type: string
+      platforms:
+        description: 'Comma-separated platforms to build (linux,macos,windows)'
+        required: false
+        type: string
+    secrets:
+      GITHUB_TOKEN:
+        required: true
   workflow_dispatch:
+    inputs:
+      revision:
+        description: 'Git SHA or ref to build'
+        required: false
+        default: ''
+        type: string
+      platforms:
+        description: 'Comma-separated platforms (linux,macos,windows)'
+        required: false
+        default: 'linux,macos,windows'
+        type: string
 
 permissions:
   id-token: write       # Needed for GitHub OIDC → AWS
@@ -22,6 +46,7 @@ jobs:
   build-test:
     if: >
       github.event_name != 'workflow_dispatch' &&
+      github.event_name != 'workflow_call' &&
       github.ref != 'refs/heads/main'
     runs-on: ubuntu-latest
 
@@ -46,9 +71,9 @@ jobs:
     needs: build-test
     if: >
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_call' ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
@@ -65,9 +90,19 @@ jobs:
 
     env:
       S3_BUCKET: entropy-builds
-      GIT_SHA: ${{ github.sha }}
+      GIT_SHA: ${{ inputs.revision != '' && inputs.revision || github.event.inputs.revision != '' && github.event.inputs.revision || github.sha }}
+      PLATFORMS: ${{ inputs.platforms != '' && inputs.platforms || github.event.inputs.platforms != '' && github.event.inputs.platforms || 'linux,macos,windows' }}
 
     steps:
+      - name: Initialize job summary
+        run: echo "# Build & Package Summary for ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Skip if this platform not requested
+        if: ${{ !contains(env.PLATFORMS, matrix.os) }}
+        run: |
+          echo "Skipping platform ${{ matrix.os }}"
+          exit 0
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -84,17 +119,14 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Initialize job summary
-        run: echo "# Build & Package Summary for ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
-
-      - name: Extract project version
+      - name: Extract versions
         id: extract-version
         run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          BUILD_VERSION="${VERSION}.${{ github.run_number }}"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "BUILD_VERSION=$BUILD_VERSION" >> $GITHUB_ENV
-          echo "Using version: $BUILD_VERSION (from $VERSION)"
+          BASE=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          BUILD="${BASE}.${{ github.run_number }}"
+          echo "VERSION=$BASE" >> $GITHUB_ENV
+          echo "BUILD_VERSION=$BUILD" >> $GITHUB_ENV
+          echo "Using BUILD_VERSION=$BUILD (from $BASE)"
 
       - name: Build & Upload for ${{ matrix.os }}
         id: upload
@@ -103,23 +135,17 @@ jobs:
           ARTIFACT="entropy-${BUILD_VERSION}-${matrix.os}.jar"
           S3_KEY="${GIT_SHA}/${matrix.os}/${ARTIFACT}"
           S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
-          
+
           echo "ARTIFACT_NAME=$ARTIFACT" >> $GITHUB_ENV
           echo "S3_KEY=$S3_KEY" >> $GITHUB_ENV
           echo "S3_URI=$S3_URI" >> $GITHUB_ENV
 
-          echo "🔍 Checking S3 for ${ARTIFACT}..."
           if aws s3api head-object --bucket "$S3_BUCKET" --key "$S3_KEY" 2>/dev/null; then
             echo "RESULT=skipped" >> $GITHUB_ENV
             echo "✔️ Already exists—skipping build."
           else
-            echo "RESULT=built"   >> $GITHUB_ENV
-            echo "🚧 Building ${ARTIFACT} ..."
-            mvn clean package \
-              -P${matrix.os} \
-              -Drevision="${BUILD_VERSION}"
-
-            echo "📤 Uploading to S3..."
+            echo "RESULT=built" >> $GITHUB_ENV
+            mvn clean package -P${matrix.os} -Drevision="${BUILD_VERSION}"
             aws s3 cp "target/${ARTIFACT}" "${S3_URI}"
           fi
 
@@ -129,10 +155,9 @@ jobs:
           {
             echo "## 📦 Artifact Summary: \`${{ matrix.os }}\`"
             echo ""
-            echo "**Artifact Version:** \`${BUILD_VERSION}\`"
-            echo "**Status:** $([[ $RESULT == built ]] && echo '✅ Built & uploaded' || echo '⚠️ Skipped (already existed)')"
-            echo "**S3 URI:** `${S3_URI}`"
-            echo ""
+            echo "- **Version:** \`${BUILD_VERSION}\`"
+            echo "- **Status:** $([[ $RESULT == built ]] && echo '✅ Built' || echo '⚠️ Skipped')"
+            echo "- **URI:** \`${S3_URI}\`"
           } >> $GITHUB_STEP_SUMMARY
 
       - name: Verify S3 contents
