@@ -95,7 +95,7 @@ jobs:
         run: echo "# Build & Package Summary for ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Skip if this platform not requested
-        if: ${{ !contains(fromJson(format('[\"{0}\"]', join(',', env.PLATFORMS))), matrix.os) }}
+        if: ${{ !contains(env.PLATFORMS, matrix.os) }}
         run: |
           echo "Skipping platform ${{ matrix.os }}"
           exit 0
@@ -142,7 +142,7 @@ jobs:
             echo "✔️ Already exists—skipping build."
           else
             echo "RESULT=built" >> $GITHUB_ENV
-            mvn clean package -P${matrix.os} -Drevision="${BUILD_VERSION}"
+            mvn clean package -P${matrix.os} -Dbuild.revision="${BUILD_VERSION}"
             aws s3 cp "target/${ARTIFACT}" "${S3_URI}"
           fi
 
