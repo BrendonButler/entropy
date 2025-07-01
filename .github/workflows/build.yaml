@@ -92,22 +92,22 @@ jobs:
 
     steps:
       - name: Initialize job summary
-        if: ${{ !contains(env.PLATFORMS, matrix.os) }}
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
         run: echo "# Build & Package Summary for ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Checkout code
-        if: ${{ !contains(env.PLATFORMS, matrix.os) }}
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials (OIDC)
-        if: ${{ !contains(env.PLATFORMS, matrix.os) }}
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::400389109701:role/GHA-entropy-DeployRole
           aws-region: us-east-1
 
       - name: Set up Java 21 & cache Maven
-        if: ${{ !contains(env.PLATFORMS, matrix.os) }}
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -116,7 +116,7 @@ jobs:
 
       - name: Extract versions
         id: extract-version
-        if: ${{ !contains(env.PLATFORMS, matrix.os) }}
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
         shell: bash
         run: |
           BASE=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
@@ -127,7 +127,7 @@ jobs:
 
       - name: Build & Upload for ${{ matrix.os }}
         id: upload
-        if: ${{ !contains(env.PLATFORMS, matrix.os) }}
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
         shell: bash
         env:
           MATRIX_OS: ${{ matrix.os }}
@@ -153,7 +153,7 @@ jobs:
 
       - name: Verify S3 contents
         id: verify-s3
-        if: ${{ !contains(env.PLATFORMS, matrix.os) }}
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
         shell: bash
         run: |
           if aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | grep -q '\.jar'; then
@@ -164,7 +164,7 @@ jobs:
 
       - name: Emit summary details
         id: summary
-        if: ${{ !contains(env.PLATFORMS, matrix.os) }}
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
         shell: bash
         run: |
           {
