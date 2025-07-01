@@ -128,22 +128,23 @@ jobs:
       - name: Build & Upload for ${{ matrix.os }}
         id: upload
         shell: bash
+        env:
+          MATRIX_OS: ${{ matrix.os }}
+          ARTIFACT: entropy-${{ env.BUILD_VERSION }}-${{ matrix.os }}.jar
+          S3_KEY: ${{ env.GIT_SHA }}/${{ matrix.os }}/${{ env.ARTIFACT }}
+          S3_URI: s3://${{ env.S3_BUCKET }}/${{ env.S3_KEY }}
         run: |
-          ARTIFACT="entropy-${BUILD_VERSION}-${matrix.os}.jar"
-          S3_KEY="${GIT_SHA}/${matrix.os}/${ARTIFACT}"
-          S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
-
           echo "ARTIFACT_NAME=$ARTIFACT" >> $GITHUB_ENV
           echo "S3_KEY=$S3_KEY" >> $GITHUB_ENV
           echo "S3_URI=$S3_URI" >> $GITHUB_ENV
-
+          
           if aws s3api head-object --bucket "$S3_BUCKET" --key "$S3_KEY" 2>/dev/null; then
             echo "RESULT=skipped" >> $GITHUB_ENV
             echo "✔️ Already exists—skipping build."
           else
             echo "RESULT=built" >> $GITHUB_ENV
-            mvn clean package -P${matrix.os} -Dbuild.revision="${BUILD_VERSION}"
-            aws s3 cp "target/${ARTIFACT}" "${S3_URI}"
+            mvn clean package -P${{ matrix.os }} -Dbuild.revision="${BUILD_VERSION}"
+            aws s3 cp "target/$ARTIFACT" "$S3_URI"
           fi
 
       - name: Emit summary details
