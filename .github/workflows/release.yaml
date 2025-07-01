@@ -55,7 +55,7 @@ jobs:
         run: |
           BASE=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           # strip build-suffix and metadata → e.g. “0.2.0-ALPHA.42+…” → “0.2.0-ALPHA”
-          REL=$(echo "$BASE" | sed -E 's/^([^.+]+)(\.[0-9]+)?(\+.*)?$/\1/')
+          REL=$(echo "$BASE" | sed -E 's/(\.[0-9]+)?(\+.*)?$//')
           echo "base_version=$BASE"      >> $GITHUB_OUTPUT
           echo "release_version=$REL"    >> $GITHUB_OUTPUT
 

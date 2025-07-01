@@ -65,7 +65,8 @@ jobs:
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'workflow_call' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') &&
+      contains(env.PLATFORMS, matrix.os)
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -94,12 +95,6 @@ jobs:
       - name: Initialize job summary
         run: echo "# Build & Package Summary for ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
 
-      - name: Skip if this platform not requested
-        if: ${{ !contains(env.PLATFORMS, matrix.os) }}
-        run: |
-          echo "Skipping platform ${{ matrix.os }}"
-          exit 0
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -118,6 +113,7 @@ jobs:
 
       - name: Extract versions
         id: extract-version
+        shell: bash
         run: |
           BASE=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           BUILD="${BASE}.${{ github.run_number }}"
@@ -134,29 +130,41 @@ jobs:
           S3_KEY: ${{ env.GIT_SHA }}/${{ matrix.os }}/${{ env.ARTIFACT }}
           S3_URI: s3://${{ env.S3_BUCKET }}/${{ env.S3_KEY }}
         run: |
-          echo "ARTIFACT_NAME=$ARTIFACT" >> $GITHUB_ENV
-          echo "S3_KEY=$S3_KEY" >> $GITHUB_ENV
-          echo "S3_URI=$S3_URI" >> $GITHUB_ENV
-          
           if aws s3api head-object --bucket "$S3_BUCKET" --key "$S3_KEY" 2>/dev/null; then
-            echo "RESULT=skipped" >> $GITHUB_ENV
+            echo "BUILD_RESULT=skipped" >> $GITHUB_ENV
             echo "✔️ Already exists—skipping build."
           else
-            echo "RESULT=built" >> $GITHUB_ENV
+            echo "BUILD_RESULT=built" >> $GITHUB_ENV
             mvn clean package -P${{ matrix.os }} -Dbuild.revision="${BUILD_VERSION}"
-            aws s3 cp "target/$ARTIFACT" "$S3_URI"
+            aws s3 sync "target/$ARTIFACT" "$S3_URI"
+          
+            if [ $? -eq 0 ]; then
+              echo "✔️ Successfully uploaded build to S3"
+            else
+              echo "❌ Failed to upload build to S3"
+              exit 1
+            fi
+          fi
+
+      - name: Verify S3 contents
+        id: verify-s3
+        shell: bash
+        run: |
+          if aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | grep -q '\.jar'; then
+            echo "VERIFY_STATUS=success" >> $GITHUB_ENV
+          else
+            echo "VERIFY_STATUS=failure" >> $GITHUB_ENV
           fi
 
       - name: Emit summary details
+        id: summary
         shell: bash
         run: |
           {
             echo "## 📦 Artifact Summary: \`${{ matrix.os }}\`"
             echo ""
             echo "- **Version:** \`${BUILD_VERSION}\`"
-            echo "- **Status:** $([[ $RESULT == built ]] && echo '✅ Built' || echo '⚠️ Skipped')"
+            echo "- **Build Status:** $([[ $BUILD_RESULT == built ]] && echo '✅ Built' || echo '⚠️ Skipped')"
+            echo "- **S3 Verification Status:** $([[ $VERIFY_STATUS == success ]] && echo '✅ Verified S3 artifact(s)' || echo '❌ Failed S3 artifact verification')"
             echo "- **URI:** \`${S3_URI}\`"
           } >> $GITHUB_STEP_SUMMARY
-
-      - name: Verify S3 contents
-        run: aws s3 ls "s3://${S3_BUCKET}/${GIT_SHA}/${matrix.os}/"
