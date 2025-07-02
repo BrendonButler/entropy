@@ -138,14 +138,18 @@ jobs:
           S3_KEY="${GIT_SHA}/${{ matrix.os }}/${ARTIFACT}"
           S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
 
-          echo "S3_ARTIFACT_URI=$S3_URI" >> $GITHUB_ENV
-
-          echo "📦 Artifact: $ARTIFACT"
-          echo "📤 S3 URI: $S3_URI"
-
           if aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | grep -q '\.jar'; then
             echo "BUILD_RESULT=skipped" >> $GITHUB_ENV
             echo "✔️ Artifact already exists in S3. Skipping build."
+
+            # Identify the existing file name
+            EXISTING_ARTIFACT=$(aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | awk '{print $4}' | grep '\.jar')
+            echo "Existing artifact found: $EXISTING_ARTIFACT"
+
+            # Update environment variables to point to the existing artifact
+            S3_KEY="${GIT_SHA}/${{ matrix.os }}/$EXISTING_ARTIFACT"
+            S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
+            ARTIFACT="$EXISTING_ARTIFACT"
           else
             echo "BUILD_RESULT=built" >> $GITHUB_ENV
             echo "🚧 Building artifact for ${{ matrix.os }}..."
@@ -162,26 +166,28 @@ jobs:
             fi
           fi
 
+          echo "S3_ARTIFACT_URI=$S3_URI" >> $GITHUB_ENV
+
+          echo "📦 Artifact: $ARTIFACT"
+          echo "📤 S3 URI: $S3_URI"
+
       - name: Verify S3 contents
         id: verify-s3
         if: ${{ contains(env.PLATFORMS, matrix.os) }}
         shell: bash
         run: |
-          if [ "$BUILD_RESULT" = "built" ]; then
-           # If we built a new artifact, verify the specific file exists
-           ARTIFACT_NAME=$(echo "$S3_ARTIFACT_URI" | sed 's|.*/||')
-           if aws s3api head-object --bucket "$S3_BUCKET" --key "${GIT_SHA}/${{ matrix.os }}/${ARTIFACT_NAME}" 2>/dev/null; then
-             echo "VERIFY_STATUS=success" >> $GITHUB_ENV
-           else
-             echo "VERIFY_STATUS=failure" >> $GITHUB_ENV
-           fi
+          # Extract full S3 key from the URI
+          ARTIFACT_KEY="${S3_ARTIFACT_URI#s3://$S3_BUCKET/}"
+
+          echo "🔍 Verifying existence of S3 object: s3://$S3_BUCKET/$ARTIFACT_KEY"
+
+          if aws s3api head-object --bucket "$S3_BUCKET" --key "$ARTIFACT_KEY" 2>/dev/null; then
+            echo "✔️ Artifact verified in S3"
+            echo "VERIFY_STATUS=success" >> $GITHUB_ENV
           else
-           # If we skipped building, verify any jar exists in the directory
-           if aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | grep -q '.jar'; then
-             echo "VERIFY_STATUS=success" >> $GITHUB_ENV
-           else
-             echo "VERIFY_STATUS=failure" >> $GITHUB_ENV
-           fi
+            echo "❌ Artifact missing or inaccessible"
+            echo "VERIFY_STATUS=failure" >> $GITHUB_ENV
+            exit 1
           fi
 
       - name: Emit summary details
