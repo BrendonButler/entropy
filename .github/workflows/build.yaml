@@ -73,13 +73,10 @@ jobs:
         include:
           - os: linux
             runner: ubuntu-latest
-            classifier: natives-linux
           - os: macos
             runner: macos-latest
-            classifier: natives-macos
           - os: windows
             runner: windows-latest
-            classifier: natives-windows
 
     env:
       S3_BUCKET: entropy-builds
@@ -91,14 +88,6 @@ jobs:
         'linux,macos,windows' }}
 
     steps:
-      - name: Determine git sha from revision
-        if: ${{ contains(env.PLATFORMS, matrix.os) }}
-        run: |
-          if [[ "$GIT_SHA" =~ refs/heads/.* ]]; then
-          GIT_SHA=$(git rev-parse "$GIT_SHA")
-          fi
-          echo "GIT_SHA=$GIT_SHA" >> $GITHUB_ENV
-
       - name: Initialize job summary
         if: ${{ contains(env.PLATFORMS, matrix.os) }}
         run: echo "# Build & Package Summary for ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
@@ -106,6 +95,14 @@ jobs:
       - name: Checkout code
         if: ${{ contains(env.PLATFORMS, matrix.os) }}
         uses: actions/checkout@v4
+
+      - name: Determine git sha from revision
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        run: |
+          if [[ "$GIT_SHA" =~ refs/heads/.* ]]; then
+          GIT_SHA=$(git rev-parse "$GIT_SHA")
+          fi
+          echo "GIT_SHA=$GIT_SHA" >> $GITHUB_ENV
 
       - name: Configure AWS credentials (OIDC)
         if: ${{ contains(env.PLATFORMS, matrix.os) }}
