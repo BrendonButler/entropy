@@ -29,8 +29,8 @@ on:
         type: string
 
 permissions:
-  id-token: write       # Needed for GitHub OIDC → AWS
-  contents: read        # For actions/checkout
+  id-token: write
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -99,7 +99,7 @@ jobs:
         if: ${{ contains(env.PLATFORMS, matrix.os) }}
         shell: bash
         run: |
-          GIT_SHA=$(git rev-parse "${{ github.event.inputs.revision || github.ref }}")
+          GIT_SHA=$(git rev-parse "${{ inputs.revision || github.event.inputs.revision || github.ref }}")
           echo "Resolved GIT_SHA: $GIT_SHA"
           echo "GIT_SHA=$GIT_SHA" >> $GITHUB_ENV
 
@@ -133,11 +133,9 @@ jobs:
         id: upload
         if: ${{ contains(env.PLATFORMS, matrix.os) }}
         shell: bash
-        env:
-          MATRIX_OS: ${{ matrix.os }}
         run: |
-          ARTIFACT="entropy-${BUILD_VERSION}-${MATRIX_OS}.jar"
-          S3_KEY="${GIT_SHA}/${MATRIX_OS}/${ARTIFACT}"
+          ARTIFACT="entropy-${BUILD_VERSION}-${{ matrix.os }}.jar"
+          S3_KEY="${GIT_SHA}/${{ matrix.os }}/${ARTIFACT}"
           S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
 
           echo "S3_ARTIFACT_URI=$S3_URI" >> $GITHUB_ENV
@@ -145,17 +143,17 @@ jobs:
           echo "📦 Artifact: $ARTIFACT"
           echo "📤 S3 URI: $S3_URI"
 
-          if aws s3api head-object --bucket "$S3_BUCKET" --key "$S3_KEY" 2>/dev/null; then
+          if aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | grep -q '\.jar'; then
             echo "BUILD_RESULT=skipped" >> $GITHUB_ENV
             echo "✔️ Artifact already exists in S3. Skipping build."
           else
             echo "BUILD_RESULT=built" >> $GITHUB_ENV
-            echo "🚧 Building artifact for $MATRIX_OS..."
-            mvn clean package -P${MATRIX_OS} -Dbuild.revision="$BUILD_VERSION"
-          
+            echo "🚧 Building artifact for ${{ matrix.os }}..."
+            mvn clean package -P${{ matrix.os }} -Dbuild.revision="$BUILD_VERSION"
+
             echo "📤 Uploading to $S3_URI"
             aws s3 cp "target/$ARTIFACT" "$S3_URI"
-          
+
             if [ $? -eq 0 ]; then
               echo "✔️ Successfully uploaded build to S3"
             else
@@ -169,10 +167,21 @@ jobs:
         if: ${{ contains(env.PLATFORMS, matrix.os) }}
         shell: bash
         run: |
-          if aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | grep -q '\.jar'; then
-            echo "VERIFY_STATUS=success" >> $GITHUB_ENV
+          if [ "$BUILD_RESULT" = "built" ]; then
+           # If we built a new artifact, verify the specific file exists
+           ARTIFACT_NAME=$(echo "$S3_ARTIFACT_URI" | sed 's|.*/||')
+           if aws s3api head-object --bucket "$S3_BUCKET" --key "${GIT_SHA}/${{ matrix.os }}/${ARTIFACT_NAME}" 2>/dev/null; then
+             echo "VERIFY_STATUS=success" >> $GITHUB_ENV
+           else
+             echo "VERIFY_STATUS=failure" >> $GITHUB_ENV
+           fi
           else
-            echo "VERIFY_STATUS=failure" >> $GITHUB_ENV
+           # If we skipped building, verify any jar exists in the directory
+           if aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | grep -q '.jar'; then
+             echo "VERIFY_STATUS=success" >> $GITHUB_ENV
+           else
+             echo "VERIFY_STATUS=failure" >> $GITHUB_ENV
+           fi
           fi
 
       - name: Emit summary details
