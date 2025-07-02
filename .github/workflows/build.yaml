@@ -91,6 +91,14 @@ jobs:
         'linux,macos,windows' }}
 
     steps:
+      - name: Determine git sha from revision
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        run: |
+          if [[ "$GIT_SHA" =~ refs/heads/.* ]]; then
+          GIT_SHA=$(git rev-parse "$GIT_SHA")
+          fi
+          echo "GIT_SHA=$GIT_SHA" >> $GITHUB_ENV
+
       - name: Initialize job summary
         if: ${{ contains(env.PLATFORMS, matrix.os) }}
         run: echo "# Build & Package Summary for ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
@@ -136,7 +144,7 @@ jobs:
           S3_KEY="${GIT_SHA}/${MATRIX_OS}/${ARTIFACT}"
           S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
 
-          echo "S3_ARTIFACT_URI=$S3_URI/$ARTIFACT" >> $GITHUB_ENV
+          echo "S3_ARTIFACT_URI=$S3_URI" >> $GITHUB_ENV
 
           echo "📦 Artifact: $ARTIFACT"
           echo "📤 S3 URI: $S3_URI"
@@ -148,7 +156,7 @@ jobs:
             echo "BUILD_RESULT=built" >> $GITHUB_ENV
             echo "🚧 Building artifact for $MATRIX_OS..."
             mvn clean package -P${MATRIX_OS} -Dbuild.revision="$BUILD_VERSION"
-
+          
             echo "📤 Uploading to $S3_URI"
             aws s3 cp "target/$ARTIFACT" "$S3_URI"
           
