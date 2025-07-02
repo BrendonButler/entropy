@@ -92,6 +92,8 @@ jobs:
       - name: Checkout code
         if: ${{ contains(env.PLATFORMS, matrix.os) }}
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensure we have full history for accurate git sha resolution
 
       - name: Determine git sha from revision
         if: ${{ contains(env.PLATFORMS, matrix.os) }}
