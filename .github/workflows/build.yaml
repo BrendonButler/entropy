@@ -104,12 +104,11 @@ jobs:
   # Package & Upload to S3 on main or manual dispatch
   # ────────────────────────────────────────────────────────────────
   package:
-    needs: [prepare, build-test]
+    needs: [ prepare, build-test ]
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'workflow_call' ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') &&
-      contains(needs.prepare.outputs.platforms, matrix.os)
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -126,6 +125,10 @@ jobs:
       S3_BUCKET: entropy-builds
 
     steps:
+      - name: Skip job if platform is not selected for packaging
+        if: ${{ !contains(needs.prepare.outputs.platforms, matrix.os) }}
+        run: echo "Skipping job for ${{ matrix.os }} as it is not a selected platform for packaging." && exit 0
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
