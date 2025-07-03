@@ -120,7 +120,7 @@ jobs:
   # Release build & upload artifacts
   # ────────────────────────────────────────────────────────────────
   build-missing:
-    name: Build Missing Artifacts
+    name: Build missing artifacts
     needs: prepare
     if: ${{ needs.prepare.outputs.tag_exists == 'false' && needs.prepare.outputs.missing_platforms != '' }}
     uses: ./.github/workflows/build.yaml
@@ -194,8 +194,14 @@ jobs:
 
       - name: Set up Git user
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          ACTOR="${{ github.actor }}"
+          if [[ -n "$ACTOR" ]]; then
+            git config user.name "$ACTOR"
+            git config user.email "${ACTOR}@users.noreply.github.com"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+          fi
 
       - name: Create & push Git tag
         run: |
