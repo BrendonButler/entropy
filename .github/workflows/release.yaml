@@ -18,7 +18,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: release-${{ github.workflow }}-${{ github.ref }}
+  group: release-${{ github.workflow }}-${{ github.event.inputs.revision || github.sha }}
   cancel-in-progress: true
 
 env:
@@ -72,6 +72,11 @@ jobs:
               SANITIZED+=("$PLATFORM")
             fi
           done
+          
+          if [[ ${#SANITIZED[@]} -eq 0 ]]; then
+            echo "No valid platforms provided after sanitization." >&2
+            exit 1
+          fi
 
           echo "platforms=$(IFS=,; echo "${SANITIZED[*]}")" >> $GITHUB_OUTPUT
 
@@ -105,6 +110,8 @@ jobs:
       - name: Check S3 for missing artifacts
         id: check-s3-release
         run: |
+          set -o pipefail
+
           IFS=',' read -ra PL <<< "${{ steps.sanitize-platforms.outputs.platforms }}"
           MISSING=()
 
@@ -152,6 +159,8 @@ jobs:
       - name: Download artifacts from S3
         id: download-artifacts
         run: |
+          set -o pipefail
+
           IFS=',' read -ra PL <<< "${{ needs.prepare.outputs.platforms }}"
           for OS in "${PL[@]}"; do
             S3_PATH="s3://$S3_BUCKET/${{ needs.prepare.outputs.revision }}/${OS}/"
@@ -185,7 +194,7 @@ jobs:
           PROJECT_VERSION="${{ needs.prepare.outputs.release_version }}"
           STRIPPED_PROJECT_VERSION=$(echo "$PROJECT_VERSION" | sed -E 's/\.[0-9]+$//')
           for FILE in *.jar; do
-            FILE_VERSION=$(echo "$FILE" | sed -E 's/^entropy-([0-9]+\.[0-9]+\.[0-9]+-[A-Z]+)(\.[0-9]+)?-[a-z]+\.jar$/\1/')
+            FILE_VERSION=$(echo "$FILE" | sed -E 's/^entropy-([0-9]+\.[0-9]+\.[0-9]+(-[A-Z]+)?)(\.[0-9]+)?-[a-z]+\.jar$/\1/')
             if [[ "$FILE_VERSION" != "$STRIPPED_PROJECT_VERSION" ]]; then
               echo "Version mismatch: $FILE_VERSION (artifact) vs $STRIPPED_PROJECT_VERSION (project)"
               exit 1

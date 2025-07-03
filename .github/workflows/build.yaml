@@ -33,7 +33,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: build-${{ github.workflow }}-${{ github.ref }}
+  group: build-${{ github.workflow }}-${{ github.event.inputs.revision || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -169,6 +169,8 @@ jobs:
         if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         id: upload
         run: |
+          set -o pipefail
+
           ARTIFACT="entropy-${BUILD_VERSION}-${{ matrix.os }}.jar"
           S3_KEY="${{ needs.prepare.outputs.revision }}/${{ matrix.os }}/${ARTIFACT}"
           S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
