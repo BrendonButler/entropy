@@ -115,6 +115,9 @@ jobs:
       github.event_name == 'workflow_call' ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -154,7 +157,6 @@ jobs:
 
       - name: Extract versions
         id: extract-version
-        shell: bash
         run: |
           BASE=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           BUILD="${BASE}.${{ github.run_number }}"
@@ -164,7 +166,6 @@ jobs:
 
       - name: Build & Upload for ${{ matrix.os }}
         id: upload
-        shell: bash
         run: |
           ARTIFACT="entropy-${BUILD_VERSION}-${{ matrix.os }}.jar"
           S3_KEY="${{ needs.prepare.outputs.revision }}/${{ matrix.os }}/${ARTIFACT}"
@@ -207,7 +208,6 @@ jobs:
 
       - name: Verify S3 contents
         id: verify-s3
-        shell: bash
         run: |
           # Extract full S3 key from the URI
           ARTIFACT_KEY="${S3_ARTIFACT_URI#s3://$S3_BUCKET/}"
@@ -225,7 +225,6 @@ jobs:
 
       - name: Emit summary details
         id: summary
-        shell: bash
         run: |
           {
             echo "## 📦 Artifact Summary: \`${{ matrix.os }}\`"
