@@ -133,22 +133,21 @@ jobs:
       S3_BUCKET: entropy-builds
 
     steps:
-      - name: Skip job if platform is not selected for packaging
-        if: ${{ !contains(needs.prepare.outputs.platforms, matrix.os) }}
-        run: echo "Skipping job for ${{ matrix.os }} as it is not a selected platform for packaging." && exit 0
-
       - name: Checkout code
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.prepare.outputs.revision }}
 
       - name: Configure AWS credentials (OIDC)
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::400389109701:role/GHA-entropy-DeployRole
           aws-region: us-east-1
 
       - name: Set up Java 21 & cache Maven
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -156,6 +155,7 @@ jobs:
           cache: maven
 
       - name: Extract versions
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         id: extract-version
         run: |
           BASE=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
@@ -165,6 +165,7 @@ jobs:
           echo "Using BUILD_VERSION=$BUILD (from $BASE)"
 
       - name: Build & Upload for ${{ matrix.os }}
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         id: upload
         run: |
           ARTIFACT="entropy-${BUILD_VERSION}-${{ matrix.os }}.jar"
@@ -207,6 +208,7 @@ jobs:
           echo "📤 S3 URI: $S3_URI"
 
       - name: Verify S3 contents
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         id: verify-s3
         run: |
           # Extract full S3 key from the URI
@@ -224,6 +226,7 @@ jobs:
           fi
 
       - name: Emit summary details
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         id: summary
         run: |
           {
