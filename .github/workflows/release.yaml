@@ -173,15 +173,21 @@ jobs:
               echo "Failed to download $ARTIFACT from $S3_URI"
               exit 1
             fi
+
+            # Remove the build number from the file name
+            CLEAN_NAME=$(echo "$ARTIFACT" | sed -E 's/\.[0-9]+-([a-z]+)\.jar$/-\1.jar/')
+            mv "$ARTIFACT" "$CLEAN_NAME"
+            echo "Renamed $ARTIFACT to $CLEAN_NAME"
           done
 
       - name: Verify artifact version
         run: |
           PROJECT_VERSION="${{ needs.prepare.outputs.release_version }}"
+          STRIPPED_PROJECT_VERSION=$(echo "$PROJECT_VERSION" | sed -E 's/\.[0-9]+$//')
           for FILE in *.jar; do
-            FILE_VERSION=$(echo "$FILE" | sed -E 's/^entropy-([0-9]+\.[0-9]+\.[0-9]+-[A-Z]+\.[0-9]+)-[a-z]+\.jar$/\1/')
-            if [[ "$FILE_VERSION" != "$PROJECT_VERSION" ]]; then
-              echo "Version mismatch: $FILE_VERSION (artifact) vs $PROJECT_VERSION (project)"
+            FILE_VERSION=$(echo "$FILE" | sed -E 's/^entropy-([0-9]+\.[0-9]+\.[0-9]+-[A-Z]+)(\.[0-9]+)?-[a-z]+\.jar$/\1/')
+            if [[ "$FILE_VERSION" != "$STRIPPED_PROJECT_VERSION" ]]; then
+              echo "Version mismatch: $FILE_VERSION (artifact) vs $STRIPPED_PROJECT_VERSION (project)"
               exit 1
             fi
           done
