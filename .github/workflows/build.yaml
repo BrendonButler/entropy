@@ -54,6 +54,8 @@ jobs:
             REV="${GITHUB_SHA}"
           elif git rev-parse --verify "$REV" >/dev/null 2>&1; then
             REV=$(git rev-parse "$REV")
+          elif git rev-parse --verify "refs/heads/$REV" >/dev/null 2>&1; then
+            REV=$(git rev-parse "refs/heads/$REV")
           else
             echo "Invalid revision input: $REV"
             exit 1
