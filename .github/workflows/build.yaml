@@ -1,0 +1,207 @@
+name: Build & Package
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ '**' ]
+  workflow_call:
+    inputs:
+      revision:
+        description: 'Git SHA or ref to build'
+        required: false
+        type: string
+      platforms:
+        description: 'Comma-separated platforms to build (linux,macos,windows)'
+        required: false
+        type: string
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: 'Git SHA or ref to build'
+        required: false
+        default: ''
+        type: string
+      platforms:
+        description: 'Comma-separated platforms (linux,macos,windows)'
+        required: false
+        default: 'linux,macos,windows'
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ────────────────────────────────────────────────────────────────
+  # Build & Test only (no S3 artifacts) on feature branches & PRs
+  # ────────────────────────────────────────────────────────────────
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21 & cache Maven
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Build & run tests
+        run: mvn clean verify
+
+  # ────────────────────────────────────────────────────────────────
+  # Package & Upload to S3 on main or manual dispatch
+  # ────────────────────────────────────────────────────────────────
+  package:
+    needs: build-test
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_call' ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            runner: ubuntu-latest
+          - os: macos
+            runner: macos-latest
+          - os: windows
+            runner: windows-latest
+
+    env:
+      S3_BUCKET: entropy-builds
+      PLATFORMS: ${{ (github.event_name == 'workflow_call' && inputs.platforms) ||
+        (github.event_name == 'workflow_dispatch' && github.event.inputs.platforms) ||
+        'linux,macos,windows' }}
+
+    steps:
+      - name: Initialize job summary
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        run: echo "# Build & Package Summary for ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Checkout code
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.revision || github.ref }}
+
+      - name: Set revision
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        shell: bash
+        run: |
+          GIT_SHA=$(git rev-parse "${{ inputs.revision || github.event.inputs.revision || github.ref }}")
+          echo "Resolved GIT_SHA: $GIT_SHA"
+          echo "GIT_SHA=$GIT_SHA" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials (OIDC)
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::400389109701:role/GHA-entropy-DeployRole
+          aws-region: us-east-1
+
+      - name: Set up Java 21 & cache Maven
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Extract versions
+        id: extract-version
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        shell: bash
+        run: |
+          BASE=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          BUILD="${BASE}.${{ github.run_number }}"
+          echo "VERSION=$BASE" >> $GITHUB_ENV
+          echo "BUILD_VERSION=$BUILD" >> $GITHUB_ENV
+          echo "Using BUILD_VERSION=$BUILD (from $BASE)"
+
+      - name: Build & Upload for ${{ matrix.os }}
+        id: upload
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        shell: bash
+        run: |
+          ARTIFACT="entropy-${BUILD_VERSION}-${{ matrix.os }}.jar"
+          S3_KEY="${GIT_SHA}/${{ matrix.os }}/${ARTIFACT}"
+          S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
+
+          if aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | grep -q '\.jar'; then
+            echo "BUILD_RESULT=skipped" >> $GITHUB_ENV
+            echo "✔️ Artifact already exists in S3. Skipping build."
+
+            # Identify the existing file name
+            EXISTING_ARTIFACT=$(aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | awk '{print $4}' | grep '\.jar')
+            EXISTING_VERSION=$(echo "$EXISTING_ARTIFACT" | sed -E 's/^entropy-([0-9]+\.[0-9]+\.[0-9]+-[A-Z]+\.[0-9]+)-[a-z]+\.jar$/\1/')
+            echo "Existing artifact found: $EXISTING_ARTIFACT"
+            echo "BUILD_VERSION=$EXISTING_VERSION" >> $GITHUB_ENV
+
+            # Update environment variables to point to the existing artifact
+            S3_KEY="${GIT_SHA}/${{ matrix.os }}/$EXISTING_ARTIFACT"
+            S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
+            ARTIFACT="$EXISTING_ARTIFACT"
+          else
+            echo "BUILD_RESULT=built" >> $GITHUB_ENV
+            echo "🚧 Building artifact for ${{ matrix.os }}..."
+            mvn clean package -P${{ matrix.os }} -Dbuild.revision="$BUILD_VERSION"
+
+            echo "📤 Uploading to $S3_URI"
+            aws s3 cp "target/$ARTIFACT" "$S3_URI"
+
+            if [ $? -eq 0 ]; then
+              echo "✔️ Successfully uploaded build to S3"
+            else
+              echo "❌ Failed to upload build to S3"
+              exit 1
+            fi
+          fi
+
+          echo "S3_ARTIFACT_URI=$S3_URI" >> $GITHUB_ENV
+
+          echo "📦 Artifact: $ARTIFACT"
+          echo "📤 S3 URI: $S3_URI"
+
+      - name: Verify S3 contents
+        id: verify-s3
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        shell: bash
+        run: |
+          # Extract full S3 key from the URI
+          ARTIFACT_KEY="${S3_ARTIFACT_URI#s3://$S3_BUCKET/}"
+
+          echo "🔍 Verifying existence of S3 object: s3://$S3_BUCKET/$ARTIFACT_KEY"
+
+          if aws s3api head-object --bucket "$S3_BUCKET" --key "$ARTIFACT_KEY" 2>/dev/null; then
+            echo "✔️ Artifact verified in S3"
+            echo "VERIFY_STATUS=success" >> $GITHUB_ENV
+          else
+            echo "❌ Artifact missing or inaccessible"
+            echo "VERIFY_STATUS=failure" >> $GITHUB_ENV
+            exit 1
+          fi
+
+      - name: Emit summary details
+        id: summary
+        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        shell: bash
+        run: |
+          {
+            echo "## 📦 Artifact Summary: \`${{ matrix.os }}\`"
+            echo ""
+            echo "- **Version:** \`${BUILD_VERSION}\`"
+            echo "- **Build Status:** $([[ $BUILD_RESULT == built ]] && echo '✅ Built' || echo '⚠️ Skipped')"
+            echo "- **S3 Verification Status:** $([[ $VERIFY_STATUS == success ]] && echo '✅ Verified S3 artifact(s)' || echo '❌ Failed S3 artifact verification')"
+            echo "- **URI:** \`${S3_ARTIFACT_URI}\`"
+          } >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,152 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      revision:
+        description: 'Git SHA or ref (defaults to current commit)'
+        required: false
+        default: ''
+      platforms:
+        description: 'Comma-separated platforms (linux,macos,windows)'
+        required: false
+        default: 'linux,macos,windows'
+
+permissions:
+  contents: write
+  id-token: write
+  pull-requests: read
+
+jobs:
+  prepare:
+    name: Prepare Version & Inputs
+    runs-on: ubuntu-latest
+
+    outputs:
+      revision: ${{ steps.resolve.outputs.revision }}
+      platforms: ${{ steps.resolve.outputs.platforms }}
+      base_version: ${{ steps.parse.outputs.base_version }}
+      release_version: ${{ steps.parse.outputs.release_version }}
+      missing: ${{ steps.check-s3.outputs.missing }}
+      tag_exists: ${{ steps.check-tag.outputs.tag_exists }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::400389109701:role/GHA-entropy-DeployRole
+          aws-region: us-east-1
+
+      - name: Resolve inputs
+        id: resolve
+        run: |
+          REV="${{ github.event.inputs.revision }}"
+          [ -z "$REV" ] && REV="${GITHUB_SHA}"
+
+          PLATFORMS="${{ github.event.inputs.platforms }}"
+          echo "revision=$REV" >> $GITHUB_OUTPUT
+          echo "platforms=$PLATFORMS" >> $GITHUB_OUTPUT
+
+      - name: Parse project version
+        id: parse
+        run: |
+          BASE=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          # strip build-suffix and metadata → e.g. “0.2.0-ALPHA.42+…” → “0.2.0-ALPHA”
+          REL=$(echo "$BASE" | sed -E 's/(\.[0-9]+)?(\+.*)?$//')
+          echo "base_version=$BASE"      >> $GITHUB_OUTPUT
+          echo "release_version=$REL"    >> $GITHUB_OUTPUT
+
+      - name: Check for existing Git tag
+        id: check-tag
+        run: |
+          TAG="v${{ steps.parse.outputs.release_version }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check S3 for missing artifacts
+        id: check-s3
+        if: steps.check-tag.outputs.tag_exists == 'false'
+        run: |
+          if [[ -z "${{ steps.resolve.outputs.platforms }}" ]]; then
+            echo "missing=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+      
+          IFS=',' read -ra PL <<< "${{ steps.resolve.outputs.platforms }}"
+          M=()
+          for OS in "${PL[@]}"; do
+            if ! aws s3 ls "s3://entropy-builds/${{ steps.resolve.outputs.revision }}/${OS}/" | grep -q '\.jar'; then
+              M+=("$OS")
+            fi
+          done
+          MJ=$(IFS=,; echo "${M[*]}")
+          echo "missing=$MJ" >> $GITHUB_OUTPUT
+
+  build-missing:
+    name: Build Missing Artifacts
+    needs: prepare
+    if: ${{ needs.prepare.outputs.tag_exists == 'false' && needs.prepare.outputs.missing != '' }}
+    uses: ./.github/workflows/build.yaml
+    with:
+      revision: ${{ needs.prepare.outputs.revision }}
+      platforms: ${{ needs.prepare.outputs.missing }}
+    secrets: inherit
+
+  release:
+    name: Create GitHub Release
+    needs: [prepare, build-missing]
+    if: ${{ needs.prepare.outputs.tag_exists == 'false' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create & push Git tag
+        run: |
+          TAG="v${{ needs.prepare.outputs.release_version }}"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v${{ needs.prepare.outputs.release_version }}"
+          REV="${{ needs.prepare.outputs.revision }}"
+          PRFLAG=$([[ "${{ needs.prepare.outputs.base_version }}" == *-* ]] && echo "--prerelease")
+          gh release create "$TAG" \
+            --target "$REV" \
+            --verify-tag \
+            --generate-notes \
+            $PRFLAG
+
+      - name: Write release summary
+        run: |
+          TAG="v${{ needs.prepare.outputs.release_version }}"
+          REV="${{ needs.prepare.outputs.revision }}"
+          PFS="${{ needs.prepare.outputs.platforms }}"
+          REPO="${{ github.repository }}"
+          URL="https://github.com/$REPO/releases/tag/$TAG"
+          
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## 🚀 Release Summary
+          
+          - 🏷️ **Tag:** [\`$TAG\`]($URL)
+          - 🔁 **Revision:** \`$REV\`
+          - 💻 **Platforms:** \`$PFS\`
+          
+          _View full release details:_ [$URL]($URL)
+          EOF
