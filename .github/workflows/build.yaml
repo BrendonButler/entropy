@@ -46,6 +46,11 @@ jobs:
       revision: ${{ steps.resolve.outputs.revision }}
       platforms: ${{ steps.sanitize-platforms.outputs.platforms }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Resolve revision
         id: resolve
         run: |
@@ -54,8 +59,6 @@ jobs:
             REV="${GITHUB_SHA}"
           elif git rev-parse --verify "$REV" >/dev/null 2>&1; then
             REV=$(git rev-parse "$REV")
-          elif git rev-parse --verify "refs/heads/$REV" >/dev/null 2>&1; then
-            REV=$(git rev-parse "refs/heads/$REV")
           else
             echo "Invalid revision input: $REV"
             exit 1
