@@ -144,7 +144,9 @@ jobs:
 
             # Identify the existing file name
             EXISTING_ARTIFACT=$(aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | awk '{print $4}' | grep '\.jar')
+            EXISTING_VERSION=$(echo "$EXISTING_ARTIFACT" | sed -E 's/entropy-([0-9]+\.[0-9]+\.[0-9]+-[A-Z]+\.[0-9]+?)-[a-z]+\.jar/\1/')
             echo "Existing artifact found: $EXISTING_ARTIFACT"
+            echo "VERSION=$EXISTING_VERSION" >> $GITHUB_ENV
 
             # Update environment variables to point to the existing artifact
             S3_KEY="${GIT_SHA}/${{ matrix.os }}/$EXISTING_ARTIFACT"
