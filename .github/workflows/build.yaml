@@ -38,13 +38,14 @@ concurrency:
 
 jobs:
   # ────────────────────────────────────────────────────────────────
-  # Prepare outputs and sanitize inputs
+  # Prepare outputs & sanitize inputs
   # ────────────────────────────────────────────────────────────────
   prepare:
     runs-on: ubuntu-latest
     outputs:
       revision: ${{ steps.resolve.outputs.revision }}
       platforms: ${{ steps.sanitize-platforms.outputs.platforms }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
