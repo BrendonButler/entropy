@@ -33,19 +33,68 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: build-${{ github.workflow }}-${{ github.event.inputs.revision || github.sha }}
   cancel-in-progress: true
 
 jobs:
   # ────────────────────────────────────────────────────────────────
+  # Prepare outputs & sanitize inputs
+  # ────────────────────────────────────────────────────────────────
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      revision: ${{ steps.resolve.outputs.revision }}
+      platforms: ${{ steps.sanitize-platforms.outputs.platforms }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve revision
+        id: resolve
+        run: |
+          REV="${{ github.event.inputs.revision }}"
+          if [[ -z "$REV" ]]; then
+            REV="${GITHUB_SHA}"
+          elif git rev-parse --verify "$REV" >/dev/null 2>&1; then
+            REV=$(git rev-parse "$REV")
+          else
+            echo "Invalid revision input: $REV"
+            exit 1
+          fi
+          echo "revision=$REV" >> $GITHUB_OUTPUT
+
+      - name: Sanitize platforms
+        id: sanitize-platforms
+        run: |
+          PLATFORMS="${{ github.event.inputs.platforms }}"
+          VALID_PLATFORMS=("linux" "macos" "windows")
+          SANITIZED=()
+
+          IFS=',' read -ra INPUT <<< "$PLATFORMS"
+          for PLATFORM in "${INPUT[@]}"; do
+            PLATFORM=$(echo "$PLATFORM" | xargs) # Trim spaces
+            if [[ " ${VALID_PLATFORMS[@]} " =~ " $PLATFORM " ]]; then
+              SANITIZED+=("$PLATFORM")
+            fi
+          done
+
+          echo "platforms=$(IFS=,; echo "${SANITIZED[*]}")" >> $GITHUB_OUTPUT
+
+  # ────────────────────────────────────────────────────────────────
   # Build & Test only (no S3 artifacts) on feature branches & PRs
   # ────────────────────────────────────────────────────────────────
   build-test:
+    needs: prepare
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.revision }}
 
       - name: Set up Java 21 & cache Maven
         uses: actions/setup-java@v4
@@ -61,12 +110,15 @@ jobs:
   # Package & Upload to S3 on main or manual dispatch
   # ────────────────────────────────────────────────────────────────
   package:
-    needs: build-test
+    needs: [ prepare, build-test ]
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'workflow_call' ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -80,38 +132,23 @@ jobs:
 
     env:
       S3_BUCKET: entropy-builds
-      PLATFORMS: ${{ (github.event_name == 'workflow_call' && inputs.platforms) ||
-        (github.event_name == 'workflow_dispatch' && github.event.inputs.platforms) ||
-        'linux,macos,windows' }}
 
     steps:
-      - name: Initialize job summary
-        if: ${{ contains(env.PLATFORMS, matrix.os) }}
-        run: echo "# Build & Package Summary for ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
-
       - name: Checkout code
-        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.revision || github.ref }}
-
-      - name: Set revision
-        if: ${{ contains(env.PLATFORMS, matrix.os) }}
-        shell: bash
-        run: |
-          GIT_SHA=$(git rev-parse "${{ inputs.revision || github.event.inputs.revision || github.ref }}")
-          echo "Resolved GIT_SHA: $GIT_SHA"
-          echo "GIT_SHA=$GIT_SHA" >> $GITHUB_ENV
+          ref: ${{ needs.prepare.outputs.revision }}
 
       - name: Configure AWS credentials (OIDC)
-        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::400389109701:role/GHA-entropy-DeployRole
           aws-region: us-east-1
 
       - name: Set up Java 21 & cache Maven
-        if: ${{ contains(env.PLATFORMS, matrix.os) }}
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -119,9 +156,8 @@ jobs:
           cache: maven
 
       - name: Extract versions
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         id: extract-version
-        if: ${{ contains(env.PLATFORMS, matrix.os) }}
-        shell: bash
         run: |
           BASE=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           BUILD="${BASE}.${{ github.run_number }}"
@@ -130,26 +166,27 @@ jobs:
           echo "Using BUILD_VERSION=$BUILD (from $BASE)"
 
       - name: Build & Upload for ${{ matrix.os }}
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         id: upload
-        if: ${{ contains(env.PLATFORMS, matrix.os) }}
-        shell: bash
         run: |
+          set -o pipefail
+
           ARTIFACT="entropy-${BUILD_VERSION}-${{ matrix.os }}.jar"
-          S3_KEY="${GIT_SHA}/${{ matrix.os }}/${ARTIFACT}"
+          S3_KEY="${{ needs.prepare.outputs.revision }}/${{ matrix.os }}/${ARTIFACT}"
           S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
 
-          if aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | grep -q '\.jar'; then
+          if aws s3 ls "s3://$S3_BUCKET/${{ needs.prepare.outputs.revision }}/${{ matrix.os }}/" | grep -q '\.jar'; then
             echo "BUILD_RESULT=skipped" >> $GITHUB_ENV
             echo "✔️ Artifact already exists in S3. Skipping build."
 
             # Identify the existing file name
-            EXISTING_ARTIFACT=$(aws s3 ls "s3://$S3_BUCKET/$GIT_SHA/${{ matrix.os }}/" | awk '{print $4}' | grep '\.jar')
+            EXISTING_ARTIFACT=$(aws s3 ls "s3://$S3_BUCKET/${{ needs.prepare.outputs.revision }}/${{ matrix.os }}/" | awk '{print $4}' | grep '\.jar')
             EXISTING_VERSION=$(echo "$EXISTING_ARTIFACT" | sed -E 's/^entropy-([0-9]+\.[0-9]+\.[0-9]+-[A-Z]+\.[0-9]+)-[a-z]+\.jar$/\1/')
             echo "Existing artifact found: $EXISTING_ARTIFACT"
             echo "BUILD_VERSION=$EXISTING_VERSION" >> $GITHUB_ENV
 
             # Update environment variables to point to the existing artifact
-            S3_KEY="${GIT_SHA}/${{ matrix.os }}/$EXISTING_ARTIFACT"
+            S3_KEY="${{ needs.prepare.outputs.revision }}/${{ matrix.os }}/$EXISTING_ARTIFACT"
             S3_URI="s3://${S3_BUCKET}/${S3_KEY}"
             ARTIFACT="$EXISTING_ARTIFACT"
           else
@@ -174,9 +211,8 @@ jobs:
           echo "📤 S3 URI: $S3_URI"
 
       - name: Verify S3 contents
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         id: verify-s3
-        if: ${{ contains(env.PLATFORMS, matrix.os) }}
-        shell: bash
         run: |
           # Extract full S3 key from the URI
           ARTIFACT_KEY="${S3_ARTIFACT_URI#s3://$S3_BUCKET/}"
@@ -193,9 +229,8 @@ jobs:
           fi
 
       - name: Emit summary details
+        if: ${{ contains(needs.prepare.outputs.platforms, matrix.os) }}
         id: summary
-        if: ${{ contains(env.PLATFORMS, matrix.os) }}
-        shell: bash
         run: |
           {
             echo "## 📦 Artifact Summary: \`${{ matrix.os }}\`"
