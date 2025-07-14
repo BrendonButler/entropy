@@ -4,12 +4,15 @@
                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.brendonbutler.entropy</groupId>
+    <groupId>net.sparkzz.entropy</groupId>
     <artifactId>entropy</artifactId>
     <version>0.1.0-PREALPHA</version>
-    <name>entropy</name>
-    <description>Ivy must resolve the disorder by battling through the mysterious force that threatens the kingdoms.</description>
-    <url>https://www.sparkzz.net/projects?id=entropy</url>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>engine</module>
+        <module>game</module>
+    </modules>
 
     <developers>
         <developer>
@@ -41,31 +44,33 @@
         <build.revision>${project.version}</build.revision>
     </properties>
 
-    <dependencies>
-        <!-- LWJGL core -->
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl</artifactId>
-            <version>${lwjgl.version}</version>
-        </dependency>
+    <dependencyManagement>
+        <dependencies>
+            <!-- LWJGL core -->
+            <dependency>
+                <groupId>org.lwjgl</groupId>
+                <artifactId>lwjgl</artifactId>
+                <version>${lwjgl.version}</version>
+            </dependency>
 
-        <!-- LWJGL native binding (resolved via property) -->
-        <dependency>
-          <groupId>org.lwjgl</groupId>
-          <artifactId>lwjgl</artifactId>
-          <version>${lwjgl.version}</version>
-          <classifier>${native.classifier}</classifier>
-          <scope>runtime</scope>
-        </dependency>
+            <!-- LWJGL native binding -->
+            <dependency>
+              <groupId>org.lwjgl</groupId>
+              <artifactId>lwjgl</artifactId>
+              <version>${lwjgl.version}</version>
+              <classifier>${native.classifier}</classifier>
+              <scope>runtime</scope>
+            </dependency>
 
-        <!-- JUnit Jupiter for testing -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+            <!-- JUnit 5 (Jupiter) for testing -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <finalName>${project.artifactId}-${build.revision}-${platform.name}</finalName>
