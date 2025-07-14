@@ -41,7 +41,7 @@ mvn clean package -Plinux
 
 ## 📝 Versioning Strategy
 
-> [!NOTE]
+> [!IMPORTANT]
 > This project follows [Semantic Versioning](https://semver.org/) with explicit pre-release qualifiers.
 
 ### 🔖 Version Stages
@@ -58,6 +58,10 @@ mvn clean package -Plinux
 
 ### ⚙️ Bumping Guidelines
 
-- Minor bumps (`0.x.0`) introduce sizable features or API changes during pre-releases.
-- Patch bumps (`0.x.1`) address bug fixes or small refinements within the same stage.
+> [!NOTE]
+> The is to never "_major bump_," but it may happen eventually once enough new concepts and better ways of doing things are learned and implemented.
+
+- Major bumps (`x.0.0`) indicate significant rewrites.
+- Minor bumps (`0.y.0`) introduce sizable features or API changes during pre-releases.
+- Patch bumps (`0.1.z`) address bug fixes or small refinements within the same stage.
 - After an RC (`-RC.N`) is validated, drop the qualifier for GA (`1.0.0`).
