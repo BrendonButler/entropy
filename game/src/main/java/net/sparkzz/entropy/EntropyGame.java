@@ -1,23 +1,41 @@
 package net.sparkzz.entropy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Main class for the Entropy Game, implementing the IEntropyGame interface.
+ * This class contains the main game loop and handles game updates and rendering.
+ *
+ * @author Brendon Butler
+ * @version 0.1.0-PREALPHA
+ * @since 2025-07-14
+ */
 public class EntropyGame implements IEntropyGame {
+
+    private static final Logger log = LoggerFactory.getLogger(EntropyGame.class);
 
     @Override
     public void update() {
         // Game logic updates (e.g., physics, AI, etc.)
-        System.out.println("Updating game logic...");
+        // TODO: Implement game logic updates
     }
 
     @Override
     public void render() {
         // Game rendering logic (e.g., drawing objects, UI, etc.)
-        System.out.println("Rendering game visuals...");
+        // TODO: Implement game rendering logic
     }
 
     public static void main(String[] args) {
-        EntropyEngine engine = new EntropyEngine();
-        EntropyGame game = new EntropyGame();
+        try {
+            EntropyGame game = new EntropyGame();
+            EntropyEngine engine = new EntropyEngine(game);
 
-        engine.run(game);
+            engine.run();
+        } catch (Exception exception) {
+            log.error("An error occurred while running the Entropy Game", exception);
+            System.exit(1);
+        }
     }
 }

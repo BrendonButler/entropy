@@ -2,6 +2,8 @@ package net.sparkzz.entropy;
 
 import org.lwjgl.glfw.*;
 import org.lwjgl.system.MemoryStack;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.IntBuffer;
 
@@ -18,19 +20,34 @@ import static org.lwjgl.system.MemoryStack.stackPush;
  */
 public class EntropyEngine {
 
+    private static final int WINDOW_WIDTH = 800, WINDOW_HEIGHT = 600;
+    private static final Logger log = LoggerFactory.getLogger(EntropyEngine.class);
+
+    private final IEntropyGame game;
+
     private long window;
-    private IEntropyGame game;
+
+    /**
+     * Constructs an Entropy Engine instance with the specified game.
+     *
+     * @param game The game instance to run with the engine.
+     */
+    public EntropyEngine(IEntropyGame game) {
+        this.game = game;
+    }
 
     /**
      * Starts the Entropy Engine with the provided game instance.
-     *
-     * @param game The game instance to run.
      */
-    public void run(IEntropyGame game) {
-        this.game = game;
-        init();
-        loop();
-        cleanup();
+    public void run() {
+        if (game == null) throw new IllegalArgumentException("Game instance cannot be null");
+
+        try {
+            init();
+            loop();
+        } finally {
+            cleanup();
+        }
     }
 
     private void init() {
@@ -42,22 +59,22 @@ public class EntropyEngine {
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-        window = glfwCreateWindow(800, 600, "Entropy Engine", 0, 0);
+        window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Entropy Engine", 0L, 0L);
 
-        if (window == 0) throw new RuntimeException("Failed to create the GLFW window");
+        if (window == 0L) throw new RuntimeException("Failed to create the GLFW window");
 
         try (MemoryStack stack = stackPush()) {
             IntBuffer pw = stack.mallocInt(1), ph = stack.mallocInt(1);
 
             glfwGetWindowSize(window, pw, ph);
 
-            GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+            GLFWVidMode videoMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
-            assert vidmode != null;
+            if (videoMode == null) throw new RuntimeException("Failed to get video mode for primary monitor");
 
             glfwSetWindowPos(window,
-                    (vidmode.width() - pw.get(0)) / 2,
-                    (vidmode.height() - ph.get(0)) / 2
+                    (videoMode.width() - pw.get(0)) / 2,
+                    (videoMode.height() - ph.get(0)) / 2
             );
 
             glfwMakeContextCurrent(window);
@@ -70,8 +87,12 @@ public class EntropyEngine {
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
 
-            game.update();
-            game.render();
+            try {
+                game.update();
+                game.render();
+            } catch (Exception exception) {
+                log.error("Error during game loop", exception);
+            }
 
             glfwSwapBuffers(window);
         }
@@ -84,7 +105,7 @@ public class EntropyEngine {
         glfwTerminate();
 
         try (GLFWErrorCallback errorCallback = glfwSetErrorCallback(null)) {
-            if (errorCallback != null) errorCallback.free();
+            if (errorCallback == null) log.warn("Error callback was not set");
         }
     }
 }
