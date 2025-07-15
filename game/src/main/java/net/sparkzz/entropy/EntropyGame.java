@@ -27,6 +27,11 @@ public class EntropyGame implements IEntropyGame {
         // TODO: Implement game rendering logic
     }
 
+    @Override
+    public String getWindowTitle() {
+        return "Entropy";
+    }
+
     public static void main(String[] args) {
         try {
             EntropyGame game = new EntropyGame();

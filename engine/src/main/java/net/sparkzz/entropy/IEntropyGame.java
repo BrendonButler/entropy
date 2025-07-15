@@ -21,4 +21,12 @@ public interface IEntropyGame {
      * the game objects and handle graphical output.
      */
     void render();
+
+    /**
+     * Gets the title of the game window.
+     * Override this to change the window title.
+     */
+    default String getWindowTitle() {
+        return "Entropy Game";
+    }
 }

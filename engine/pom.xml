@@ -15,12 +15,6 @@
     <name>entropy engine</name>
 
     <dependencies>
-        <!-- LWJGL core -->
-        <dependency>
-            <groupId>org.lwjgl</groupId>
-            <artifactId>lwjgl</artifactId>
-        </dependency>
-
         <!-- LWJGL GLFW for window management -->
         <dependency>
             <groupId>org.lwjgl</groupId>
@@ -39,7 +33,6 @@
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl-glfw</artifactId>
             <classifier>${native.classifier}</classifier>
-            <scope>runtime</scope>
         </dependency>
 
         <!-- Logging with SLF4J and Logback -->

@@ -1,6 +1,8 @@
 package net.sparkzz.entropy;
 
-import org.lwjgl.glfw.*;
+import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.system.MemoryStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +28,7 @@ public class EntropyEngine {
     private final IEntropyGame game;
 
     private long window;
+    private String windowTitle = "Entropy Engine";
 
     /**
      * Constructs an Entropy Engine instance with the specified game.
@@ -33,7 +36,10 @@ public class EntropyEngine {
      * @param game The game instance to run with the engine.
      */
     public EntropyEngine(IEntropyGame game) {
+        if (game == null) throw new IllegalArgumentException("Game instance cannot be null");
+
         this.game = game;
+        this.windowTitle = game.getWindowTitle() != null ? game.getWindowTitle() : windowTitle;
     }
 
     /**
@@ -59,7 +65,7 @@ public class EntropyEngine {
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-        window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Entropy Engine", 0L, 0L);
+        window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, windowTitle, 0L, 0L);
 
         if (window == 0L) throw new RuntimeException("Failed to create the GLFW window");
 

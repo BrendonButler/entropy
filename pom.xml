@@ -48,13 +48,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- LWJGL core -->
-            <dependency>
-                <groupId>org.lwjgl</groupId>
-                <artifactId>lwjgl</artifactId>
-                <version>${lwjgl.version}</version>
-            </dependency>
-
             <!-- LWJGL GLFW for window management -->
             <dependency>
                 <groupId>org.lwjgl</groupId>
@@ -68,7 +61,6 @@
               <artifactId>lwjgl</artifactId>
               <version>${lwjgl.version}</version>
               <classifier>${native.classifier}</classifier>
-              <scope>runtime</scope>
             </dependency>
 
             <dependency>
