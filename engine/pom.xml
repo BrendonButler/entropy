@@ -49,8 +49,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <directory>../target</directory>
-    </build>
 </project>

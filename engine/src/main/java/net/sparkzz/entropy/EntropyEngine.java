@@ -9,11 +9,25 @@ import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
 
+/**
+ * Main class for the Entropy Engine.
+ *
+ * @author Brendon Butler
+ * @version 0.1.0-PREALPHA
+ * @since 2025-07-14
+ */
 public class EntropyEngine {
 
     private long window;
+    private IEntropyGame game;
 
-    public void run() {
+    /**
+     * Starts the Entropy Engine with the provided game instance.
+     *
+     * @param game The game instance to run.
+     */
+    public void run(IEntropyGame game) {
+        this.game = game;
         init();
         loop();
         cleanup();
@@ -56,7 +70,8 @@ public class EntropyEngine {
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
 
-            // render/update methods
+            game.update();
+            game.render();
 
             glfwSwapBuffers(window);
         }
