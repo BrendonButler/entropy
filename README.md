@@ -7,11 +7,11 @@ This project uses Maven profiles to build native-specific versions of the game u
 
 ### 🔧 Platform Profiles
 
-| Platform | Maven Profile ID | Native Classifier | Output Artifact                 | Default |
-|----------|------------------|-------------------|---------------------------------|---------|
-| Windows  | `windows`        | `natives-windows` | `entropy-<version>-windows.jar` |         |
-| macOS    | `macos`          | `natives-macos`   | `entropy-<version>-macos.jar`   | ✅       |
-| Linux    | `linux`          | `natives-linux`   | `entropy-<version>-linux.jar`   |         |
+| Platform | Maven Profile ID | Native Classifier     | Output Artifact                 | Default |
+|----------|------------------|-----------------------|---------------------------------|---------|
+| Windows  | `windows`        | `natives-windows`     | `entropy-<version>-windows.jar` |         |
+| macOS    | `macos`          | `natives-macos-arm64` | `entropy-<version>-macos.jar`   | ✅       |
+| Linux    | `linux`          | `natives-linux`       | `entropy-<version>-linux.jar`   |         |
 
 Each profile sets:
 - `native.classifier` to pull the correct native bindings

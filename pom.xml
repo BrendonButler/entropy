@@ -53,13 +53,28 @@
                 <version>${lwjgl.version}</version>
             </dependency>
 
-            <!-- LWJGL native binding -->
+            <!-- LWJGL GLFW for window management -->
+            <dependency>
+                <groupId>org.lwjgl</groupId>
+                <artifactId>lwjgl-glfw</artifactId>
+                <version>${lwjgl.version}</version>
+            </dependency>
+
+            <!-- LWJGL native bindings -->
             <dependency>
               <groupId>org.lwjgl</groupId>
               <artifactId>lwjgl</artifactId>
               <version>${lwjgl.version}</version>
               <classifier>${native.classifier}</classifier>
               <scope>runtime</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.lwjgl</groupId>
+                <artifactId>lwjgl-glfw</artifactId>
+                <version>${lwjgl.version}</version>
+                <classifier>${native.classifier}</classifier>
+                <scope>runtime</scope>
             </dependency>
 
             <!-- JUnit 5 (Jupiter) for testing -->
@@ -115,7 +130,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <native.classifier>natives-macos</native.classifier>
+                <native.classifier>natives-macos-arm64</native.classifier>
                 <platform.name>macos</platform.name>
             </properties>
         </profile>

@@ -21,10 +21,23 @@
             <artifactId>lwjgl</artifactId>
         </dependency>
 
-        <!-- LWJGL native binding -->
+        <!-- LWJGL GLFW for window management -->
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-glfw</artifactId>
+        </dependency>
+
+        <!-- LWJGL native bindings -->
         <dependency>
             <groupId>org.lwjgl</groupId>
             <artifactId>lwjgl</artifactId>
+            <classifier>${native.classifier}</classifier>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-glfw</artifactId>
             <classifier>${native.classifier}</classifier>
             <scope>runtime</scope>
         </dependency>
