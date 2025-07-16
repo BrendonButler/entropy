@@ -46,8 +46,6 @@ public class EntropyEngine {
      * Starts the Entropy Engine with the provided game instance.
      */
     public void run() {
-        if (game == null) throw new IllegalArgumentException("Game instance cannot be null");
-
         try {
             init();
             loop();

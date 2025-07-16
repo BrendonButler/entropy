@@ -40,6 +40,7 @@
 
         <lwjgl.version>3.3.6</lwjgl.version>
         <junit.version>5.13.2</junit.version>
+        <mockito.version>5.18.0</mockito.version>
         <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.18</logback.version>
 
@@ -91,6 +92,13 @@
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-junit-jupiter</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -112,7 +120,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.3</version>
                 <configuration>
-                    <useModulePath>false</useModulePath> <!-- Only needed if not yet modular -->
+                    <argLine>-XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Xshare:off</argLine>
                 </configuration>
             </plugin>
         </plugins>
