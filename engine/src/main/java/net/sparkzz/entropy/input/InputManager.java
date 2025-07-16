@@ -7,10 +7,10 @@ import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -30,9 +30,9 @@ public class InputManager {
     private final long window;
 
     private final GLFWGamepadState gamepadState = GLFWGamepadState.malloc();
-    private final List<InputListener> listeners = new ArrayList<>();
-    private final Set<Integer> keysDown = new HashSet<>();
-    private final Set<Integer> mouseButtonsDown = new HashSet<>();
+    private final List<InputListener> listeners = new CopyOnWriteArrayList<>();
+    private final Set<Integer> keysDown = ConcurrentHashMap.newKeySet();
+    private final Set<Integer> mouseButtonsDown = ConcurrentHashMap.newKeySet();
 
     private double mouseX, mouseY;
 
@@ -110,9 +110,12 @@ public class InputManager {
      * @param listener The InputListener to add.
      */
     public void addListener(InputListener listener) {
-        if (listener != null && !listeners.contains(listener)) {
-            listeners.add(listener);
+        if (listener == null) {
+            log.warn("Attempted to add null InputListener");
+            return;
         }
+
+        if (!listeners.contains(listener)) listeners.add(listener);
     }
 
     /**
@@ -144,6 +147,11 @@ public class InputManager {
     }
 
     private void initCallbacks() {
+        // Clean up any existing callbacks first (for re-initialization or accidental multiple calls)
+        if (keyCallback != null) keyCallback.close();
+        if (mouseButtonCallback != null) mouseButtonCallback.close();
+        if (cursorPosCallback != null) cursorPosCallback.close();
+
         keyCallback = glfwSetKeyCallback(window, (win, key, scancode, action, mods) -> {
             if (action == GLFW_PRESS) keysDown.add(key);
             if (action == GLFW_RELEASE) keysDown.remove(key);

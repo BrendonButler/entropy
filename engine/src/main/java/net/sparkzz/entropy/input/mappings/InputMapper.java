@@ -1,5 +1,6 @@
 package net.sparkzz.entropy.input.mappings;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -25,14 +26,15 @@ public class InputMapper<T extends Enum<T> & InputActionProvider> {
      * @param actionClass the class of the InputAction enum
      */
     public InputMapper(Class<T> actionClass) {
-        this.defaultBindings = Stream.of(actionClass.getEnumConstants()).collect(Collectors.toMap(
-                Function.identity(),
-                InputActionProvider::getDefaultKey,
-                (a, b) -> a,
-                () -> new EnumMap<>(actionClass)
-        ));
+        this.defaultBindings = Collections.unmodifiableMap(
+                Stream.of(actionClass.getEnumConstants()).collect(Collectors.toMap(
+                        Function.identity(),
+                        InputActionProvider::getDefaultKey,
+                        (a, b) -> a,
+                        () -> new EnumMap<>(actionClass)
+                )));
 
-        this.userBindings = new EnumMap<>(actionClass);
+        this.userBindings = Collections.synchronizedMap(new EnumMap<>(actionClass));
     }
 
     /**
