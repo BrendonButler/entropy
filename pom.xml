@@ -114,40 +114,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Maven Dependency Plugin to unpack LWJGL natives -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.5.0</version>
-                <executions>
-                    <execution>
-                        <id>unpack-natives</id>
-                        <phase>process-test-classes</phase>
-                        <goals>
-                            <goal>unpack</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.lwjgl</groupId>
-                                    <artifactId>lwjgl</artifactId>
-                                    <version>${lwjgl.version}</version>
-                                    <classifier>${native.classifier}</classifier>
-                                    <outputDirectory>${project.build.directory}/natives</outputDirectory>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.lwjgl</groupId>
-                                    <artifactId>lwjgl-glfw</artifactId>
-                                    <version>${lwjgl.version}</version>
-                                    <classifier>${native.classifier}</classifier>
-                                    <outputDirectory>${project.build.directory}/natives</outputDirectory>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <!-- Test runner -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -155,9 +121,6 @@
                 <version>3.5.3</version>
                 <configuration>
                     <argLine>-XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Xshare:off</argLine>
-                    <systemPropertyVariables>
-                        <java.library.path>${project.build.directory}/natives/${platform.name}</java.library.path>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
