@@ -28,11 +28,17 @@ public class InputManager {
     private final static Logger log = LoggerFactory.getLogger(InputManager.class);
 
     private final long window;
+
+    private final GLFWGamepadState gamepadState = GLFWGamepadState.malloc();
+    private final List<InputListener> listeners = new ArrayList<>();
     private final Set<Integer> keysDown = new HashSet<>();
     private final Set<Integer> mouseButtonsDown = new HashSet<>();
-    private final List<InputListener> listeners = new ArrayList<>();
 
     private double mouseX, mouseY;
+
+    private GLFWKeyCallback keyCallback;
+    private GLFWMouseButtonCallback mouseButtonCallback;
+    private GLFWCursorPosCallback cursorPosCallback;
 
     /**
      * Constructs an InputManager for the specified GLFW window.
@@ -51,12 +57,10 @@ public class InputManager {
     public void update() {
         for (int joyId = GLFW_JOYSTICK_1; joyId <= GLFW_JOYSTICK_LAST; joyId++) {
             if (glfwJoystickPresent(joyId)) {
-                try (GLFWGamepadState state = GLFWGamepadState.malloc()) {
-                    if (glfwGetGamepadState(joyId, state)) {
-                        final int joystickId = joyId;
+                if (glfwGetGamepadState(joyId, gamepadState)) {
+                    final int joystickId = joyId;
 
-                        dispatch(listener -> listener.onGamepadEvent(joystickId, state));
-                    }
+                    dispatch(listener -> listener.onGamepadEvent(joystickId, gamepadState));
                 }
             }
         }
@@ -120,32 +124,52 @@ public class InputManager {
         listeners.remove(listener);
     }
 
+    /**
+     * Removes all registered input listeners.
+     */
+    public void removeAllListeners() {
+        listeners.clear();
+    }
+
+    /**
+     * Cleans up resources used by the InputManager.
+     * Should be called when the InputManager is no longer needed.
+     */
+    public void cleanup() {
+        if (keyCallback != null) keyCallback.close();
+        if (mouseButtonCallback != null) mouseButtonCallback.close();
+        if (cursorPosCallback != null) cursorPosCallback.close();
+
+        gamepadState.close();
+    }
+
     private void initCallbacks() {
-        try (
-                GLFWKeyCallback keyCallback = glfwSetKeyCallback(window, (win, key, scancode, action, mods) -> {
-                    if (action == GLFW_PRESS) keysDown.add(key);
-                    if (action == GLFW_RELEASE) keysDown.remove(key);
+        keyCallback = glfwSetKeyCallback(window, (win, key, scancode, action, mods) -> {
+            if (action == GLFW_PRESS) keysDown.add(key);
+            if (action == GLFW_RELEASE) keysDown.remove(key);
 
-                    dispatch(listener -> listener.onKeyEvent(key, action, mods));
-                });
+            dispatch(listener -> listener.onKeyEvent(key, action, mods));
+        });
 
-                GLFWMouseButtonCallback mouseButtonCallback = glfwSetMouseButtonCallback(window, (win, button, action, mods) -> {
-                    if (action == GLFW_PRESS) mouseButtonsDown.add(button);
-                    if (action == GLFW_RELEASE) mouseButtonsDown.remove(button);
+        mouseButtonCallback = glfwSetMouseButtonCallback(window, (win, button, action, mods) -> {
+            if (action == GLFW_PRESS) mouseButtonsDown.add(button);
+            if (action == GLFW_RELEASE) mouseButtonsDown.remove(button);
 
-                    dispatch(listener -> listener.onMouseButtonEvent(button, action, mods));
-                });
+            dispatch(listener -> listener.onMouseButtonEvent(button, action, mods));
+        });
 
-                GLFWCursorPosCallback cursorPosCallback = glfwSetCursorPosCallback(window, (win, xpos, ypos) -> {
-                    mouseX = xpos;
-                    mouseY = ypos;
+        cursorPosCallback = glfwSetCursorPosCallback(window, (win, xpos, ypos) -> {
+            mouseX = xpos;
+            mouseY = ypos;
 
-                    dispatch(listener -> listener.onMouseMove(xpos, ypos));
-                })
-        ) {
-            if (keyCallback == null || mouseButtonCallback == null || cursorPosCallback == null) {
-                log.error("Failed to set input callbacks");
-            }
+            dispatch(listener -> listener.onMouseMove(xpos, ypos));
+        });
+
+        if (keyCallback == null || mouseButtonCallback == null || cursorPosCallback == null) {
+            log.error("Failed to set input callbacks (key: {}, mouse button: {}, cursor pos: {}",
+                    keyCallback == null ? "null" : "set",
+                    mouseButtonCallback == null ? "null" : "set",
+                    cursorPosCallback == null ? "null" : "set");
         }
     }
 

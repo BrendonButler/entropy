@@ -34,7 +34,7 @@
     </dependencies>
 
     <build>
-        <finalName>${parent.artifactId}-${build.revision}-${platform.name}</finalName>
+        <finalName>${project.parent.artifactId}-${build.revision}-${platform.name}</finalName>
         <directory>../target</directory>
     </build>
 </project>

@@ -12,7 +12,8 @@ public interface IEntropyGame {
 
     /**
      * Updates the game logic. This method is called on each frame to process
-     * game state changes, physics calculations, and other updates.
+     * game state changes, physics calculations, and other updates. Called once
+     * per frame before render().
      */
     void update();
 

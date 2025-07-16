@@ -10,9 +10,11 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_W;
 
 class InputMapperTest {
 
+    private static final InputMapper<InputAction> inputMapper = new InputMapper<>(InputAction.class);
+
     @BeforeEach
     void setUp() {
-        InputMapper.clearBinding(MOVE_FORWARD);
+        inputMapper.clearAllBindings();
     }
 
     @Test
@@ -24,34 +26,34 @@ class InputMapperTest {
 
     @Test
     void testCustomBindings() {
-        assertEquals(MOVE_FORWARD.getDefaultKey(), InputMapper.getBinding(MOVE_FORWARD));
+        assertEquals(MOVE_FORWARD.getDefaultKey(), inputMapper.getBinding(MOVE_FORWARD));
 
-        InputMapper.setBinding(MOVE_FORWARD, GLFW_KEY_ESCAPE);
-        assertEquals(GLFW_KEY_ESCAPE, InputMapper.getBinding(MOVE_FORWARD));
-        assertNotEquals(GLFW_KEY_W, InputMapper.getBinding(MOVE_FORWARD));
+        inputMapper.setBinding(MOVE_FORWARD, GLFW_KEY_ESCAPE);
+        assertEquals(GLFW_KEY_ESCAPE, inputMapper.getBinding(MOVE_FORWARD));
+        assertNotEquals(GLFW_KEY_W, inputMapper.getBinding(MOVE_FORWARD));
     }
 
     @Test
     void testDefaultBinding_WhenCustomSet() {
-        InputMapper.setBinding(MOVE_FORWARD, GLFW_KEY_ESCAPE);
-        assertEquals(MOVE_FORWARD.getDefaultKey(), InputMapper.getDefaultBinding(MOVE_FORWARD));
-        assertEquals(GLFW_KEY_ESCAPE, InputMapper.getBinding(MOVE_FORWARD));
+        inputMapper.setBinding(MOVE_FORWARD, GLFW_KEY_ESCAPE);
+        assertEquals(MOVE_FORWARD.getDefaultKey(), inputMapper.getDefaultBinding(MOVE_FORWARD));
+        assertEquals(GLFW_KEY_ESCAPE, inputMapper.getBinding(MOVE_FORWARD));
     }
 
     @Test
     void testClearBindings() {
-        InputMapper.setBinding(MOVE_FORWARD, GLFW_KEY_ESCAPE);
-        assertEquals(GLFW_KEY_ESCAPE, InputMapper.getBinding(MOVE_FORWARD));
+        inputMapper.setBinding(MOVE_FORWARD, GLFW_KEY_ESCAPE);
+        assertEquals(GLFW_KEY_ESCAPE, inputMapper.getBinding(MOVE_FORWARD));
 
-        InputMapper.clearBinding(MOVE_FORWARD);
-        assertEquals(GLFW_KEY_W, InputMapper.getBinding(MOVE_FORWARD));
+        inputMapper.clearBinding(MOVE_FORWARD);
+        assertEquals(GLFW_KEY_W, inputMapper.getBinding(MOVE_FORWARD));
     }
 
     @Test
     void testInvalidBindings() {
-        assertThrows(IllegalArgumentException.class, () -> InputMapper.setBinding(null, GLFW_KEY_W));
-        assertThrows(IllegalArgumentException.class, () -> InputMapper.setBinding(MOVE_FORWARD, -1));
-        assertThrows(IllegalArgumentException.class, () -> InputMapper.getBinding(null));
-        assertThrows(IllegalArgumentException.class, () -> InputMapper.getDefaultBinding(null));
+        assertThrows(IllegalArgumentException.class, () -> inputMapper.setBinding(null, GLFW_KEY_W));
+        assertThrows(IllegalArgumentException.class, () -> inputMapper.setBinding(MOVE_FORWARD, -1));
+        assertThrows(IllegalArgumentException.class, () -> inputMapper.getBinding(null));
+        assertThrows(IllegalArgumentException.class, () -> inputMapper.getDefaultBinding(null));
     }
 }

@@ -41,7 +41,7 @@ mvn clean package -Pwindows
 
 ### 🧪 Running Tests
 
-To run tests, you need to have the native libraries for the specific platform available. You can download them from the [LWJGL website](https://www.lwjgl.org/download).
+To run tests, you need to have the native libraries for the specific platform available. You can download them from the [LWJGL website](https://www.lwjgl.org/download) (ensure the version matches your project dependencies).
 
 > [!NOTE]
 > For macOS, you will need to specify the `-XstartOnFirstThread` JVM argument to avoid threading issues.

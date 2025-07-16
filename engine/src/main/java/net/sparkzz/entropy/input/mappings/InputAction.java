@@ -10,7 +10,7 @@ import static org.lwjgl.glfw.GLFW.*;
  * @version 0.1.0-PREALPHA
  * @since 2025-07-15
  */
-public enum InputAction {
+public enum InputAction implements InputActionProvider {
     // Movement
     MOVE_FORWARD(GLFW_KEY_W),
     MOVE_BACKWARD(GLFW_KEY_S),

@@ -58,6 +58,6 @@
     </dependencies>
 
     <build>
-        <finalName>${parent.artifactId}-${project.artifactId}-${build.revision}-${platform.name}</finalName>
+        <finalName>${project.parent.artifactId}-${project.artifactId}-${build.revision}-${platform.name}</finalName>
     </build>
 </project>

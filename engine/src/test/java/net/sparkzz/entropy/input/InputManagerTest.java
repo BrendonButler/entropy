@@ -16,6 +16,7 @@ class InputManagerTest {
         inputManager.addListener(inputListener);
         inputManager.addListener(inputListener); // Adding the same listener again should not duplicate it
 
+        // Verify that dispatching calls the listener exactly once, not multiple times
         inputManager.dispatch(listener -> listener.onKeyEvent(GLFW_KEY_W, GLFW_PRESS, 0));
         verify(inputListener, times(1)).onKeyEvent(GLFW_KEY_W, GLFW_PRESS, 0);
     }
