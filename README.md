@@ -7,11 +7,11 @@ This project uses Maven profiles to build native-specific versions of the game u
 
 ### 🔧 Platform Profiles
 
-| Platform | Maven Profile ID | Native Classifier | Output Artifact                 | Default |
-|----------|------------------|-------------------|---------------------------------|---------|
-| Windows  | `windows`        | `natives-windows` | `entropy-<version>-windows.jar` |         |
-| macOS    | `macos`          | `natives-macos`   | `entropy-<version>-macos.jar`   | ✅       |
-| Linux    | `linux`          | `natives-linux`   | `entropy-<version>-linux.jar`   |         |
+| Platform | Maven Profile ID | Native Classifier     | Output Artifact                 | Default |
+|----------|------------------|-----------------------|---------------------------------|---------|
+| Windows  | `windows`        | `natives-windows`     | `entropy-<version>-windows.jar` |         |
+| macOS    | `macos`          | `natives-macos-arm64` | `entropy-<version>-macos.jar`   | ✅       |
+| Linux    | `linux`          | `natives-linux`       | `entropy-<version>-linux.jar`   |         |
 
 Each profile sets:
 - `native.classifier` to pull the correct native bindings
@@ -24,9 +24,9 @@ Each profile sets:
 
 To package for a specific OS, activate its profile:
 
-#### Windows
+#### Linux
 ```bash
-mvn clean package -Pwindows
+mvn clean package -Plinux
 ```
 
 #### macOS (default)
@@ -34,9 +34,33 @@ mvn clean package -Pwindows
 mvn clean package -Pmacos
 ```
 
+#### Windows
+```bash
+mvn clean package -Pwindows
+```
+
+### 🧪 Running Tests
+
+To run tests, you need to have the native libraries for the specific platform available. You can download them from the [LWJGL website](https://www.lwjgl.org/download) (ensure the version matches your project dependencies).
+
+> [!NOTE]
+> For macOS, you will need to specify the `-XstartOnFirstThread` JVM argument to avoid threading issues.
+
+To test the game on a specific platform, use the corresponding Maven profile. This will run the tests using the native libraries for that platform.
+
 #### Linux
 ```bash
-mvn clean package -Plinux
+mvn test -Plinux
+```
+
+#### macOS
+```bash
+mvn test -Pmacos -DargLine="-XstartOnFirstThread"
+```
+
+#### Windows
+```bash
+mvn test -Pwindows
 ```
 
 ## 📝 Versioning Strategy

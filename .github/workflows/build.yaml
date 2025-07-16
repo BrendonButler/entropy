@@ -104,7 +104,7 @@ jobs:
           cache: maven
 
       - name: Build & run tests
-        run: mvn clean verify
+        run: mvn clean verify -Plinux
 
   # ────────────────────────────────────────────────────────────────
   # Package & Upload to S3 on main or manual dispatch
