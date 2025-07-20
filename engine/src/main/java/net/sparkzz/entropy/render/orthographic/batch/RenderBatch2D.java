@@ -44,7 +44,7 @@ public abstract class RenderBatch2D<T extends Renderable2D> implements IRenderBa
     public void begin(Camera2D camera) {
         shader.bind();
         shader.setProjectionMatrix(camera.getProjectionMatrix());
-        if(!persistent) batchItems.clear();
+        if (!persistent) batchItems.clear();
     }
 
     /**

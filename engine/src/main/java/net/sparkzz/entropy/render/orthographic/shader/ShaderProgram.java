@@ -65,7 +65,7 @@ public abstract class ShaderProgram {
     }
 
     /**
-     * Binds the shader program for use.
+     * Creates and caches the location of a uniform variable in the shader program.
      * <p>
      * Call once per uniform name to cache its location.
      *

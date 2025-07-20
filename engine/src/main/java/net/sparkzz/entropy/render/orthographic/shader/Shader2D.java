@@ -14,14 +14,14 @@ import org.joml.Vector4f;
 public class Shader2D extends ShaderProgram {
 
     /**
-     * Constructs a Shader2D instance with specified vertex and fragment shader paths.
+     * Constructs a Shader2D instance with specified vertex and fragment shader source code.
      * Initializes the necessary uniforms for 2D rendering.
      *
-     * @param vertexPath   The file path to the vertex shader source code.
-     * @param fragmentPath The file path to the fragment shader source code.
+     * @param vertexSource   The source code of the vertex shader.
+     * @param fragmentSource The source code of the fragment shader.
      */
-    public Shader2D(String vertexPath, String fragmentPath) {
-        super(vertexPath, fragmentPath);
+    public Shader2D(String vertexSource, String fragmentSource) {
+        super(vertexSource, fragmentSource);
         createUniform("uProjection");
         createUniform("uModel");
         createUniform("uColor");

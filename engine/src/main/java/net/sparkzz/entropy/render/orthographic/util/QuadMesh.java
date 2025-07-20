@@ -63,9 +63,6 @@ public class QuadMesh {
         // 4) Unbind to clean up
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
-
-        // Free the vertex buffer
-        MemoryUtil.memFree(vertices);
     }
 
     /**
