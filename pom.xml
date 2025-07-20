@@ -42,6 +42,7 @@
         <junit.version>5.13.2</junit.version>
         <mockito.version>5.18.0</mockito.version>
         <slf4j.version>2.0.17</slf4j.version>
+        <joml.version>1.10.8</joml.version>
         <logback.version>1.5.18</logback.version>
 
         <build.revision>${project.version}</build.revision>
@@ -53,6 +54,19 @@
             <dependency>
                 <groupId>org.lwjgl</groupId>
                 <artifactId>lwjgl-glfw</artifactId>
+                <version>${lwjgl.version}</version>
+            </dependency>
+
+            <!-- LWJGL OpenGL -->
+            <dependency>
+                <groupId>org.lwjgl</groupId>
+                <artifactId>lwjgl-opengl</artifactId>
+                <version>${lwjgl.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.lwjgl</groupId>
+                <artifactId>lwjgl-stb</artifactId>
                 <version>${lwjgl.version}</version>
             </dependency>
 
@@ -70,6 +84,20 @@
                 <version>${lwjgl.version}</version>
                 <classifier>${native.classifier}</classifier>
                 <scope>runtime</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.lwjgl</groupId>
+                <artifactId>lwjgl-opengl</artifactId>
+                <classifier>${native.classifier}</classifier>
+                <version>${lwjgl.version}</version>
+            </dependency>
+
+            <!-- Math libraries -->
+            <dependency>
+                <groupId>org.joml</groupId>
+                <artifactId>joml</artifactId>
+                <version>${joml.version}</version>
             </dependency>
 
             <!-- Logging (SLF4J API + Logback Classic) -->
