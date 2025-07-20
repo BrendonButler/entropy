@@ -93,6 +93,15 @@ public abstract class RenderBatch2D<T extends Renderable2D> implements IRenderBa
     }
 
     /**
+     * Gets the current size of the batch.
+     *
+     * @return The number of entities currently in the batch
+     */
+    public int getSize() {
+        return batchItems.size();
+    }
+
+    /**
      * Flushes the batch, rendering all submitted entities.
      * This method must be implemented by subclasses to define specific rendering behavior.
      */

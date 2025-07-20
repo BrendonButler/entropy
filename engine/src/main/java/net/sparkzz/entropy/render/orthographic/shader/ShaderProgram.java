@@ -32,19 +32,19 @@ public abstract class ShaderProgram {
     protected ShaderProgram(String vertexCode, String fragmentCode) {
         programId = glCreateProgram();
 
-        if (programId == 0) throw new RuntimeException("Could not create Shader");
+        if (programId == 0) throw new RuntimeException("Could not create shader program");
 
         int vertexShaderId = compile(vertexCode, GL_VERTEX_SHADER);
-        int fragmentShaderId = compile(fragmentCode, GL_VERTEX_SHADER);
+        int fragmentShaderId = compile(fragmentCode, GL_FRAGMENT_SHADER);
 
         glAttachShader(programId, vertexShaderId);
         glAttachShader(programId, fragmentShaderId);
+
         glLinkProgram(programId);
 
         if (glGetProgrami(programId, GL_LINK_STATUS) == GL_FALSE)
             throw new RuntimeException("Could not link shader program: " + glGetProgramInfoLog(programId));
 
-        // shaders can be detached and deleted after linking
         glDetachShader(programId, vertexShaderId);
         glDetachShader(programId, fragmentShaderId);
         glDeleteShader(vertexShaderId);
@@ -53,6 +53,7 @@ public abstract class ShaderProgram {
 
     private int compile(String code, int type) {
         int id = glCreateShader(type);
+        if (id == 0) throw new RuntimeException("Could not create shader of type " + type);
 
         glShaderSource(id, code);
         glCompileShader(id);
