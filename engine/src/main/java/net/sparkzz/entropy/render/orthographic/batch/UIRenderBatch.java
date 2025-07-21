@@ -13,6 +13,8 @@ import java.util.Comparator;
  */
 public class UIRenderBatch extends RenderBatch2D<UIElement> {
 
+    private final Matrix4f modelMatrix = new Matrix4f();
+
     /**
      * Constructs a UIRenderBatch with the specified shader.
      *
@@ -35,7 +37,7 @@ public class UIRenderBatch extends RenderBatch2D<UIElement> {
         QuadMesh.bind();
 
         for (UIElement element : batchItems) {
-            Matrix4f modelMatrix = new Matrix4f()
+            modelMatrix.identity()
                     .translate(element.getPosition().x, element.getPosition().y, 0)
                     .scale(element.getSize().x, element.getSize().y, 1)
                     .rotateZ((float) Math.toRadians(element.getRotation()));

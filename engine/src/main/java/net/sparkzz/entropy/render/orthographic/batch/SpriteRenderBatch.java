@@ -15,6 +15,8 @@ import org.joml.Matrix4f;
  */
 public class SpriteRenderBatch extends RenderBatch2D<Sprite> {
 
+    private final Matrix4f modelMatrix = new Matrix4f();
+
     /**
      * Constructs a SpriteRenderBatch with the specified shader.
      *
@@ -34,7 +36,7 @@ public class SpriteRenderBatch extends RenderBatch2D<Sprite> {
         QuadMesh.bind();
 
         for (Sprite sprite : batchItems) {
-            Matrix4f modelMatrix = new Matrix4f()
+            modelMatrix.identity()
                     .translate(sprite.getPosition().x, sprite.getPosition().y, 0)
                     .scale(sprite.getSize().x, sprite.getSize().y, 1)
                     .rotateZ((float) Math.toRadians(sprite.getRotation()));
