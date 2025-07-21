@@ -22,13 +22,18 @@ public class Shader2DTest {
     void setUp() {
         if (!GLFW.glfwInit()) throw new IllegalStateException("Unable to initialize GLFW");
 
+        // Make window invisible for CI/headless environments
+        GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
         GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
         GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
         GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
 
         window = GLFW.glfwCreateWindow(800, 600, "Shader2D Test", 0L, 0L);
 
-        if (window == 0L) throw new RuntimeException("Failed to create the GLFW window");
+        if (window == 0L) {
+            GLFW.glfwTerminate();
+            throw new RuntimeException("Failed to create the GLFW window");
+        }
 
         GLFW.glfwMakeContextCurrent(window);
         GL.createCapabilities();
@@ -37,6 +42,9 @@ public class Shader2DTest {
             vertexShaderSource = loadResourceAsString("/shaders/test_vertex_shader.glsl");
             fragmentShaderSource = loadResourceAsString("/shaders/test_fragment_shader.glsl");
         } catch (IOException exception) {
+            // Clean up GLFW resources if shader loading fails
+            GLFW.glfwDestroyWindow(window);
+            GLFW.glfwTerminate();
             throw new RuntimeException("Failed to load shader sources for Shader2D tests", exception);
         }
     }

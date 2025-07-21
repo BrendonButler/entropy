@@ -51,7 +51,17 @@ public class Render2D {
      * @param <T>   The type of renderable object, extending Renderable2D.
      */
     public synchronized <T extends Renderable2D> void render(BatchType type, Collection<T> items) {
-        IRenderBatch2D<T> batch = (IRenderBatch2D<T>) batches.get(type);
+        if (type == null || items == null) {
+            throw new IllegalArgumentException("BatchType and items cannot be null");
+        }
+
+        IRenderBatch2D<?> rawBatch = batches.get(type);
+        if (rawBatch == null) {
+            throw new IllegalArgumentException("No batch found for type: " + type);
+        }
+
+        @SuppressWarnings("unchecked")
+        IRenderBatch2D<T> batch = (IRenderBatch2D<T>) rawBatch;
 
         batch.begin(camera);
         items.forEach(batch::submit);
