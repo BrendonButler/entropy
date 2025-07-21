@@ -47,8 +47,8 @@ public class Texture {
             ByteBuffer data = STBImage.stbi_load(path, width, height, components, 4);
 
             if (data == null)
-                throw new RuntimeException("Failed to load a texture file!"
-                        + System.lineSeparator() + STBImage.stbi_failure_reason());
+                throw new RuntimeException("Failed to load texture file: " + path
+                        + System.lineSeparator() + "Reason: " + STBImage.stbi_failure_reason());
 
             this.width = width.get(0);
             this.height = height.get(0);

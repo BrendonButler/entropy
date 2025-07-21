@@ -74,7 +74,7 @@ public abstract class ShaderProgram {
     protected void createUniform(String name) {
         int location = glGetUniformLocation(programId, name);
 
-        if (location < 0) throw new RuntimeException("Could not find uniform: " + name);
+        if (location < 0) throw new RuntimeException("Could not find uniform '" + name + "' in shader program " + programId);
 
         uniforms.put(name, location);
     }
