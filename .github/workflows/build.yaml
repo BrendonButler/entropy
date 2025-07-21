@@ -120,8 +120,7 @@ jobs:
       - name: Start virtual framebuffer
         run: |
           Xvfb :99 -screen 0 1024x768x24 &
-          export DISPLAY=:99
-
+          echo "DISPLAY=:99" >> $GITHUB_ENV
       - name: Build & run tests
         run: mvn clean verify -Plinux
 
