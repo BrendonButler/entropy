@@ -1,8 +1,7 @@
 package net.sparkzz.entropy.io.util;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -18,12 +17,10 @@ public class ResourceLoader {
      * @throws IOException If an I/O error occurs when reading from the file or a malformed or unmappable byte sequence is read.
      */
     public static String loadResourceAsString(String filePath) throws IOException {
-        return Files.readString(
-                Path.of(
-                        Objects.requireNonNull(
-                                ResourceLoader.class.getResource(filePath)
-                        ).getPath()
-                )
-        );
+        try (var inputStream = Objects.requireNonNull(
+                ResourceLoader.class.getResourceAsStream(filePath),
+                "Resource not found: " + filePath)) {
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 }

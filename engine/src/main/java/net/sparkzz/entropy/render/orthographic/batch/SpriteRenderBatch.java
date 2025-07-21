@@ -3,6 +3,7 @@ package net.sparkzz.entropy.render.orthographic.batch;
 import net.sparkzz.entropy.render.orthographic.model.Sprite;
 import net.sparkzz.entropy.render.orthographic.shader.Shader2D;
 import net.sparkzz.entropy.render.orthographic.util.QuadMesh;
+import org.joml.Matrix4f;
 
 /**
  * A render batch specifically for rendering sprites.
@@ -33,10 +34,18 @@ public class SpriteRenderBatch extends RenderBatch2D<Sprite> {
         QuadMesh.bind();
 
         for (Sprite sprite : batchItems) {
+            Matrix4f modelMatrix = new Matrix4f()
+                    .translate(sprite.getPosition().x, sprite.getPosition().y, 0)
+                    .scale(sprite.getSize().x, sprite.getSize().y, 1)
+                    .rotateZ((float) Math.toRadians(sprite.getRotation()));
+            shader.setModel(modelMatrix);
+
             shader.setColor(sprite.getColor());
             sprite.getTexture().bind();
 
             QuadMesh.draw();
+
+            sprite.getTexture().unbind();
         }
 
         QuadMesh.unbind();

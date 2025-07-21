@@ -42,7 +42,7 @@ public abstract class Renderable2D {
     /**
      * Retrieves the color of the renderable object.
      *
-     * @return A Vector4f representing the RGBA color.
+     * @return A Vector4f (immutable) representing the RGBA color.
      */
     public abstract Vector4f getColor();
 

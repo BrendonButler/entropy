@@ -3,7 +3,11 @@ package net.sparkzz.entropy.render.orthographic.model;
 import net.sparkzz.entropy.render.Texture;
 import net.sparkzz.entropy.render.orthographic.Renderable2D;
 import org.joml.Vector2f;
+import org.joml.Vector2fc;
 import org.joml.Vector4f;
+import org.joml.Vector4fc;
+
+import java.util.Objects;
 
 /**
  * A simple UI element that extends Renderable2D.
@@ -16,9 +20,9 @@ import org.joml.Vector4f;
 public class UIElement extends Renderable2D {
 
     private final Texture texture;
-    private final Vector2f position;
-    private final Vector2f size;
-    private final Vector4f color;
+    private final Vector2fc position;
+    private final Vector2fc size;
+    private final Vector4fc color;
     private final float rotation;
     private final int layer;
 
@@ -33,10 +37,10 @@ public class UIElement extends Renderable2D {
      * @param layer    The layer index for rendering order (lower values render first).
      */
     public UIElement(Texture texture, Vector2f position, Vector2f size, Vector4f color, float rotation, int layer) {
-        this.texture = texture;
-        this.position = position;
-        this.size = size;
-        this.color = color;
+        this.texture = Objects.requireNonNull(texture, "Texture cannot be null");
+        this.position = new Vector2f(Objects.requireNonNull(position, "Position cannot be null"));
+        this.size = new Vector2f(Objects.requireNonNull(size, "Size cannot be null"));
+        this.color = new Vector4f(Objects.requireNonNull(color, "Color cannot be null"));
         this.rotation = rotation;
         this.layer = layer;
     }
@@ -58,7 +62,7 @@ public class UIElement extends Renderable2D {
      */
     @Override
     public Vector2f getPosition() {
-        return position;
+        return position.get(new Vector2f());
     }
 
     /**
@@ -68,7 +72,7 @@ public class UIElement extends Renderable2D {
      */
     @Override
     public Vector2f getSize() {
-        return size;
+        return size.get(new Vector2f());
     }
 
     /**
@@ -78,7 +82,7 @@ public class UIElement extends Renderable2D {
      */
     @Override
     public Vector4f getColor() {
-        return color;
+        return color.get(new Vector4f());
     }
 
     /**

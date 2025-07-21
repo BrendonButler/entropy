@@ -3,6 +3,7 @@ package net.sparkzz.entropy.render.orthographic.batch;
 import net.sparkzz.entropy.render.orthographic.model.UIElement;
 import net.sparkzz.entropy.render.orthographic.shader.Shader2D;
 import net.sparkzz.entropy.render.orthographic.util.QuadMesh;
+import org.joml.Matrix4f;
 
 import java.util.Comparator;
 
@@ -34,10 +35,18 @@ public class UIRenderBatch extends RenderBatch2D<UIElement> {
         QuadMesh.bind();
 
         for (UIElement element : batchItems) {
+            Matrix4f modelMatrix = new Matrix4f()
+                    .translate(element.getPosition().x, element.getPosition().y, 0)
+                    .scale(element.getSize().x, element.getSize().y, 1)
+                    .rotateZ((float) Math.toRadians(element.getRotation()));
+            shader.setModel(modelMatrix);
+
             shader.setColor(element.getColor());
             element.getTexture().bind();
 
             QuadMesh.draw();
+
+            element.getTexture().unbind();
         }
 
         QuadMesh.unbind();

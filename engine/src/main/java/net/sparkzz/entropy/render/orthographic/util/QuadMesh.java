@@ -1,7 +1,6 @@
 package net.sparkzz.entropy.render.orthographic.util;
 
 import org.lwjgl.BufferUtils;
-import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
 
@@ -10,8 +9,7 @@ import static org.lwjgl.opengl.GL11.glDrawArrays;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
-import static org.lwjgl.opengl.GL30.glGenVertexArrays;
+import static org.lwjgl.opengl.GL30.*;
 
 /**
  * Utility class for rendering a full-screen quad.
@@ -84,5 +82,14 @@ public class QuadMesh {
      */
     public static void draw() {
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
+
+    /**
+     * Cleans up the VAO and VBO resources.
+     * Should be called upon application shutdown.
+     */
+    public static void cleanup() {
+        glDeleteBuffers(VBO);
+        glDeleteVertexArrays(VAO);
     }
 }
