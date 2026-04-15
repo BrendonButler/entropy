@@ -105,6 +105,28 @@ public abstract class ShaderProgram {
     }
 
     /**
+     * Sets a vec2 uniform in the shader program.
+     *
+     * @param name The name of the uniform variable in the shader.
+     * @param x    The x component.
+     * @param y    The y component.
+     */
+    protected void setUniform2f(String name, float x, float y) {
+        glUniform2f(uniforms.get(name), x, y);
+    }
+
+    /**
+     * Sets an integer uniform in the shader program.
+     * Primarily used to bind texture sampler units.
+     *
+     * @param name  The name of the uniform variable in the shader.
+     * @param value The integer value to set.
+     */
+    protected void setUniform1i(String name, int value) {
+        glUniform1i(uniforms.get(name), value);
+    }
+
+    /**
      * Binds the shader program.
      */
     public void bind() {
