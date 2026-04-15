@@ -5,6 +5,7 @@ import org.lwjgl.system.MemoryStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
@@ -36,15 +37,25 @@ public class Texture {
     public Texture(String path) {
         logger.info("Loading texture from path: {}", path);
 
+        ByteBuffer imageBuffer;
+        try (InputStream is = getClass().getResourceAsStream(path)) {
+            if (is == null)
+                throw new RuntimeException("Texture resource not found: " + path);
+            byte[] bytes = is.readAllBytes();
+            imageBuffer = org.lwjgl.system.MemoryUtil.memAlloc(bytes.length);
+            imageBuffer.put(bytes).flip();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load texture resource: " + path, e);
+        }
+
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer width = stack.mallocInt(1);
             IntBuffer height = stack.mallocInt(1);
             IntBuffer components = stack.mallocInt(1);
 
-            // Flip Y axis to match OpenGL's coordinate system
             STBImage.stbi_set_flip_vertically_on_load(true);
 
-            ByteBuffer data = STBImage.stbi_load(path, width, height, components, 4);
+            ByteBuffer data = STBImage.stbi_load_from_memory(imageBuffer, width, height, components, 4);
 
             if (data == null)
                 throw new RuntimeException("Failed to load texture file: " + path
@@ -64,6 +75,8 @@ public class Texture {
 
             STBImage.stbi_image_free(data);
             unbind();
+        } finally {
+            org.lwjgl.system.MemoryUtil.memFree(imageBuffer);
         }
     }
 
