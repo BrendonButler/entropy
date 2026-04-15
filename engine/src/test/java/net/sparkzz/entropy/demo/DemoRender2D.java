@@ -18,6 +18,15 @@ import java.util.List;
 
 import static net.sparkzz.entropy.io.util.ResourceLoader.loadResourceAsString;
 
+/**
+ * Interactive demo for manually validating the 2D orthographic renderer.
+ * Renders a solid-color quad using {@link Render2D} and the default 2D shaders.
+ * Intentionally placed in {@code src/test} so it is excluded from the distributed artifact.
+ *
+ * @author Brendon Butler
+ * @version 0.1.0-PREALPHA
+ * @since 2025-07-28
+ */
 public class DemoRender2D implements IEntropyGame {
 
     private static final Logger log = LoggerFactory.getLogger(DemoRender2D.class);
@@ -25,6 +34,7 @@ public class DemoRender2D implements IEntropyGame {
     private Render2D renderer;
     private UIElement element;
     private boolean initialized = false;
+    private boolean initFailed = false;
 
     private void initResources() {
         String vertexShader, fragmentShader;
@@ -60,7 +70,17 @@ public class DemoRender2D implements IEntropyGame {
 
     @Override
     public void render() {
-        if (!initialized) initResources();
+        if (initFailed) return;
+
+        if (!initialized) {
+            try {
+                initResources();
+            } catch (RuntimeException e) {
+                log.error("Failed to initialize rendering resources, disabling renderer", e);
+                initFailed = true;
+                return;
+            }
+        }
 
         renderer.render(BatchType.UI_ELEMENT, List.of(element));
     }

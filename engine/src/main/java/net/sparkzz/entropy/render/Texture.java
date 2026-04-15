@@ -51,7 +51,11 @@ public class Texture {
         ByteBuffer pixel = MemoryUtil.memAlloc(4);
 
         try {
-            pixel.put((byte) (r * 255)).put((byte) (g * 255)).put((byte) (b * 255)).put((byte) (a * 255)).flip();
+            pixel.put((byte) (int) (Math.clamp(r, 0f, 1f) * 255))
+                 .put((byte) (int) (Math.clamp(g, 0f, 1f) * 255))
+                 .put((byte) (int) (Math.clamp(b, 0f, 1f) * 255))
+                 .put((byte) (int) (Math.clamp(a, 0f, 1f) * 255))
+                 .flip();
 
             glBindTexture(GL_TEXTURE_2D, id);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
@@ -103,18 +107,23 @@ public class Texture {
             this.height = height.get(0);
             this.id = glGenTextures();
 
-            bind();
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this.width, this.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-            glGenerateMipmap(GL_TEXTURE_2D);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-            STBImage.stbi_image_free(data);
-            unbind();
+            try {
+                bind();
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this.width, this.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                glGenerateMipmap(GL_TEXTURE_2D);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            } catch (RuntimeException e) {
+                glDeleteTextures(this.id);
+                throw e;
+            } finally {
+                STBImage.stbi_image_free(data);
+                unbind();
+            }
         } finally {
-            org.lwjgl.system.MemoryUtil.memFree(imageBuffer);
+            MemoryUtil.memFree(imageBuffer);
         }
     }
 
