@@ -44,10 +44,10 @@ public class DemoRender2D implements IEntropyGame {
         );
 
         element = new UIElement(
-                Texture.ofColor(0.2f, 0.6f, 1f, 1f),
+                Texture.ofColor(1f, 1f, 1f, 1f),
                 new Vector2f(0f, 0f),
                 new Vector2f(0.25f, 0.25f),
-                new Vector4f(1f, 1f, 1f, 1f),
+                new Vector4f(0.2f, 0.6f, 1f, 1f),
                 0f,
                 1
         );
