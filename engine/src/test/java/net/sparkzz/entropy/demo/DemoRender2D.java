@@ -8,6 +8,7 @@ import net.sparkzz.entropy.render.orthographic.batch.BatchType;
 import net.sparkzz.entropy.render.orthographic.camera.Camera2D;
 import net.sparkzz.entropy.render.orthographic.model.UIElement;
 import net.sparkzz.entropy.render.orthographic.shader.Shader2D;
+import net.sparkzz.entropy.render.text.shader.TextShader;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.slf4j.Logger;
@@ -37,11 +38,13 @@ public class DemoRender2D implements IEntropyGame {
     private boolean initFailed = false;
 
     private void initResources() {
-        String vertexShader, fragmentShader;
+        String vertexShader, fragmentShader, textVertexShader, textFragmentShader;
 
         try {
             vertexShader = loadResourceAsString("/shaders/default_2d_vertex.glsl");
             fragmentShader = loadResourceAsString("/shaders/default_2d_fragment.glsl");
+            textVertexShader = loadResourceAsString("/shaders/text_vertex.glsl");
+            textFragmentShader = loadResourceAsString("/shaders/text_fragment.glsl");
         } catch (IOException e) {
             log.error("Failed to load shader resources", e);
             throw new RuntimeException("Shader resource loading failed", e);
@@ -50,7 +53,8 @@ public class DemoRender2D implements IEntropyGame {
         renderer = new Render2D(
                 new Camera2D(),
                 new Shader2D(vertexShader, fragmentShader),
-                new Shader2D(vertexShader, fragmentShader)
+                new Shader2D(vertexShader, fragmentShader),
+                new TextShader(textVertexShader, textFragmentShader)
         );
 
         element = new UIElement(
