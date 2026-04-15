@@ -2,6 +2,7 @@ package net.sparkzz.entropy.render;
 
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,43 @@ public class Texture {
     private final int id;
     private final int width;
     private final int height;
+
+    private Texture(int id, int width, int height) {
+        this.id = id;
+        this.width = width;
+        this.height = height;
+    }
+
+    /**
+     * Creates a 1x1 solid-color texture from the given RGBA components.
+     * Useful for rendering untextured quads or as a placeholder texture.
+     *
+     * @param r Red component (0.0–1.0).
+     * @param g Green component (0.0–1.0).
+     * @param b Blue component (0.0–1.0).
+     * @param a Alpha component (0.0–1.0).
+     * @return A new Texture backed by a 1x1 RGBA pixel.
+     */
+    public static Texture ofColor(float r, float g, float b, float a) {
+        int id = glGenTextures();
+        ByteBuffer pixel = MemoryUtil.memAlloc(4);
+
+        try {
+            pixel.put((byte) (r * 255)).put((byte) (g * 255)).put((byte) (b * 255)).put((byte) (a * 255)).flip();
+
+            glBindTexture(GL_TEXTURE_2D, id);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glBindTexture(GL_TEXTURE_2D, 0);
+        } finally {
+            MemoryUtil.memFree(pixel);
+        }
+
+        return new Texture(id, 1, 1);
+    }
 
     /**
      * Loads a texture from the specified file path.
