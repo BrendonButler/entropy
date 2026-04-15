@@ -11,6 +11,7 @@ import java.nio.IntBuffer;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL.createCapabilities;
 import static org.lwjgl.system.MemoryStack.stackPush;
 
 /**
@@ -63,6 +64,11 @@ public class EntropyEngine {
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+
         window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, windowTitle, 0L, 0L);
 
         if (window == 0L) throw new RuntimeException("Failed to create the GLFW window");
@@ -82,6 +88,7 @@ public class EntropyEngine {
             );
 
             glfwMakeContextCurrent(window);
+            createCapabilities();
             glfwSwapInterval(1); // Enable v-sync
             glfwShowWindow(window);
         }

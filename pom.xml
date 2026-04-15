@@ -46,6 +46,9 @@
         <logback.version>1.5.18</logback.version>
 
         <build.revision>${project.version}</build.revision>
+
+        <!-- platform-specific JVM args appended to Surefire; overridden per profile -->
+        <surefire.extra.args></surefire.extra.args>
     </properties>
 
     <dependencyManagement>
@@ -155,7 +158,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.3</version>
                 <configuration>
-                    <argLine>-XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Xshare:off</argLine>
+                    <argLine>${surefire.extra.args} -XX:+EnableDynamicAgentLoading -Djdk.instrument.traceUsage=false -Xshare:off</argLine>
                 </configuration>
             </plugin>
         </plugins>
@@ -180,6 +183,7 @@
             <properties>
                 <native.classifier>natives-macos-arm64</native.classifier>
                 <platform.name>macos</platform.name>
+                <surefire.extra.args>-XstartOnFirstThread</surefire.extra.args>
             </properties>
         </profile>
         <profile>
