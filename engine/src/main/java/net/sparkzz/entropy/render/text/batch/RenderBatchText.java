@@ -6,9 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Manages the rendering of 2D text objects in batches.
- * This class collects text objects and renders them in a single pass.
- * It is designed to optimize the rendering process by minimizing state changes.
+ * Manages the rendering of text objects in batches.
+ * Collects {@link RenderableText} instances and renders them in a single pass using a
+ * dedicated text shader and font atlas.
+ *
+ * <p>Full shader-based glyph rendering will be implemented in a subsequent commit.
  *
  * @author Brendon Butler
  * @version 0.1.0-PREALPHA
@@ -19,25 +21,19 @@ public class RenderBatchText {
     private final List<RenderableText> textBatch = new ArrayList<>();
 
     /**
-     * Submits a RenderableText object to the batch for rendering.
-     * The text will be drawn in the order it was submitted.
+     * Submits a {@link RenderableText} object to the batch for rendering.
      *
-     * @param text The RenderableText object to be rendered.
+     * @param text The text object to render. Must not be null.
      */
     public void submit(RenderableText text) {
         textBatch.add(text);
     }
 
     /**
-     * Begins the rendering process for the batch.
-     * This method should be called before any text is submitted.
-     * It prepares the rendering context, such as binding shaders or textures if necessary.
+     * Renders all submitted text objects and clears the batch.
+     * Full GL rendering is not yet implemented.
      */
     public void render() {
-        for (RenderableText text : textBatch) {
-            text.draw();
-        }
-
         textBatch.clear();
     }
 }
